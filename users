@@ -1,0 +1,10 @@
+# example users file
+# comments start with # and last till end of line
+# this obviously means that a username cannot start with #
+foo
+bar baz
+
+# strange user with own description:
+sasdf
+
+another_user # you can add a comment after defining a user...

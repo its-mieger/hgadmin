@@ -1,0 +1,3 @@
+#! /usr/bin/env python
+
+print "das ist ein commithook"
