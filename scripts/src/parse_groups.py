@@ -4,8 +4,18 @@ def get_all_groups(groupsfile):
     ret = []
     currgroup = None
     for line in groupsfile:
+        isContLine = (line[0] in string.whitespace or line[0] == '#')
+        if line.find('#') != -1:
+            line = line[:line.find('#')]
+        if line.find(':') == -1:
+            if currgroup == None or not isContLine:
+                raise Exception("could not parse group file")
+            currgroup
+        else:
+            pass
         spline = line.split()
-        if currgroup != None and line[0] in string.whitespace:
+
+        if currgroup != None:
             pass
         else:
             if spline[1] == ':':
