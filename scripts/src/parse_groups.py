@@ -1,6 +1,6 @@
 """ support for parsing the groups file """
 
-def get_all_groups(groupsfile):
+def parse_groups(groupsfile):
     ret = {}
     currgroup = None
     for line in groupsfile:

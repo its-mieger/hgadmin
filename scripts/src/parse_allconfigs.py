@@ -1,10 +1,15 @@
 """ support for parsing user, group and access configuration files """
 
-def parse_conffiles(confdir):
+import os
+import parse_users
+import parse_groups
+import parse_access
 
-    userFile = confdir + '/' + 'users'
-    groupFile = confdir + '/' + 'groups'
-    accessFile = confdir + '/' + 'access'
+def parse_allconfigs(confdir):
+
+    userFile = os.path.expanduser(confdir + '/' + 'users')
+    groupFile = os.path.expanduser(confdir + '/' + 'groups')
+    accessFile = os.path.expanduser(confdir + '/' + 'access')
 
     userfd = open(userFile)
     groupfd = open(groupFile)
@@ -12,7 +17,7 @@ def parse_conffiles(confdir):
 
     userlist = parse_users.parse_users(userfd)
     groupdict = parse_groups.parse_groups(groupfd)
-    accessRuleList = parse_accessconf.parse_accessconf(accessfd)
+    accessRuleList = parse_access.parse_access(accessfd)
 
     accessfd.close()
     groupfd.close()

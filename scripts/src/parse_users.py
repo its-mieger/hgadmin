@@ -1,7 +1,7 @@
 """ support for parsing the file containing all usernames"""
 
 
-def get_all_users(usersfile):
+def parse_users(usersfile):
     ret = []
     for line in usersfile:
         x = line.split()

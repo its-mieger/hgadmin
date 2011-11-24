@@ -2,7 +2,7 @@
 
 import Rule
 
-def parse_accessconf(accessconffile):
+def parse_access(accessconffile):
     rulelist = []
     for line in accessconffile:
         line = line.strip()
@@ -10,13 +10,13 @@ def parse_accessconf(accessconffile):
             continue
         spline = line.split()
         if spline[0] == 'init':
-            rulelist.add(new InitRule(spline[1:]))
+            rulelist.add(InitRule(spline[1:]))
         elif spline[0] == 'read':
-            rulelist.add(new ReadRule(spline[1:]))
+            rulelist.add(ReadRule(spline[1:]))
         elif spline[0] == 'write':
-            rulelist.add(new WriteRule(spline[1:]))
+            rulelist.add(WriteRule(spline[1:]))
         elif spline[0] == 'deny':
-            rulelist.add(new DenyRule(spline[1:]))
+            rulelist.add(DenyRule(spline[1:]))
         else:
             raise Exception("could not parse access configuration file")
         pass
