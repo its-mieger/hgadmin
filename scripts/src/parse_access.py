@@ -1,6 +1,6 @@
 """ support for parsing the access configuration file """
 
-import Rule
+from Rule import ReadRule, InitRule, WriteRule, DenyRule
 
 def parse_access(accessconffile):
     rulelist = []
@@ -10,13 +10,13 @@ def parse_access(accessconffile):
             continue
         spline = line.split()
         if spline[0] == 'init':
-            rulelist.add(InitRule(spline[1:]))
+            rulelist.append(InitRule(spline[1:]))
         elif spline[0] == 'read':
-            rulelist.add(ReadRule(spline[1:]))
+            rulelist.append(ReadRule(spline[1:]))
         elif spline[0] == 'write':
-            rulelist.add(WriteRule(spline[1:]))
+            rulelist.append(WriteRule(spline[1:]))
         elif spline[0] == 'deny':
-            rulelist.add(DenyRule(spline[1:]))
+            rulelist.append(DenyRule(spline[1:]))
         else:
             raise Exception("could not parse access configuration file")
         pass

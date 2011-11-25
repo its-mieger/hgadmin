@@ -33,7 +33,7 @@ def parse_allconfigs(confdir):
             if not g in groupdict:
                 print "Warning: Rule %s refers to undefined group %s" %(r, g)
         for u in r.userRestr:
-            if not u in userdict:
+            if not u in userlist:
                 print "Warning: Rule %s refers to undefined user %s" %(r, u)
     
     return { "userlist": userlist, "groupdict": groupdict, "accessRuleList": accessRuleList }

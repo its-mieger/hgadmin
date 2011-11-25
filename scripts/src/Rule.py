@@ -31,6 +31,9 @@ class Rule:
         s += ")"
         return s
 
+    def __repr__(self):
+        return str(self)
+
 class ReadRule(Rule):
     pass
 

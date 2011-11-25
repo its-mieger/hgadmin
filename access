@@ -1,0 +1,4 @@
+read group=bar,baz
+write user=foo,asdf
+deny repo=dontwrite
+init repo=everyoneallowed

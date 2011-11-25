@@ -1,5 +1,7 @@
 """ support for parsing the groups file """
 
+import string
+
 def parse_groups(groupsfile):
     ret = {}
     currgroup = None
