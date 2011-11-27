@@ -1,3 +1,5 @@
+from common import *
+
 class Rule:
     def __init__(self, confArgs):
         self.groupRestr = []
@@ -34,15 +36,34 @@ class Rule:
     def __repr__(self):
         return str(self)
 
+    def allow_access(self, user, operation, repo):
+        if not isinstance(user, User) or not isinstance(operation, repo_operation):
+            raise Exception("illegal argument type")
+        return self._allow_access(user, operation, repo)
+
+    def _allow_access(self, user, operation, repo):
+        return retval_UNKNOWN
+
 class ReadRule(Rule):
-    pass
+    def _allow_access(self, user, operation, repo):
+        if operation == op_READ:
+            pass
+        return retval_UNKNOWN
 
 class WriteRule(Rule):
-    pass
+    def _allow_access(self, user, operation, repo):
+        if operation == op_READ or operation == op_WRITE:
+            pass
+        return retval_UNKNOWN
 
 class DenyRule(Rule):
-    pass
+    def _allow_access(self, user, operation, repo):
+        if 
+        return retval_UNKNOWN
 
 class InitRule(Rule):
-    pass
+    def _allow_access(self, user, operation, repo):
+        if operation == op_CREATE:
+            pass
+        return retval_UNKNOWN
 
