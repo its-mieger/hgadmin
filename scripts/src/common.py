@@ -20,6 +20,15 @@ op_READ   = repo_operation("READ")
 op_WRITE  = repo_operation("WRITE")
 op_CREATE = repo_operation("CREATE")
 
-def matchRepoPath(path, repo):
+def pat2re(pat):
+    return Null
+
+patdict = {}
+
+def matchRepoPath(pat, repo):
     raise Exception("not implemented yet")
+    if not pat in patdict:
+        patdict[pat] = pat2re(pat)
+    if patdict[pat].matches(repo):
+        return True
     return False
