@@ -1,3 +1,5 @@
+import re
+
 class namedclass:
     def __init__(self, name):     self.name = name
     def __str__(self):            return str(self.__class__) + self.name
@@ -21,7 +23,15 @@ op_WRITE  = repo_operation("WRITE")
 op_CREATE = repo_operation("CREATE")
 
 def pat2re(pat):
-    return Null
+    def tmprep(matchobj):
+        if matchobj.group() == '**':
+            return '.*'
+        if matchobj.group() == '*':
+            return '[^/]*'
+        return re.escape(matchobj.group())
+    tmp = re.sub('\\*+|[^*]*', tmprep, pat)
+    # print tmp
+    return re.compile(tmp)
 
 patdict = {}
 
@@ -29,6 +39,4 @@ def matchRepoPath(pat, repo):
     raise Exception("not implemented yet")
     if not pat in patdict:
         patdict[pat] = pat2re(pat)
-    if patdict[pat].matches(repo):
-        return True
-    return False
+    return patdict[pat].matches(repo)
