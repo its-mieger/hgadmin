@@ -16,9 +16,10 @@ retval_UNKNOWN = rule_retval("UNKNOWN")
 retval_ALLOW   = rule_retval("ALLOW")
 retval_DENY    = rule_retval("DENY")
 
-
 op_READ   = repo_operation("READ")
 op_WRITE  = repo_operation("WRITE")
 op_CREATE = repo_operation("CREATE")
 
-
+def matchRepoPath(path, repo):
+    raise Exception("not implemented yet")
+    return False

@@ -36,33 +36,50 @@ class Rule:
     def __repr__(self):
         return str(self)
 
-    def allow_access(self, user, operation, repo):
-        if not isinstance(user, User) or not isinstance(operation, repo_operation):
+    def allow_access(self, user, operation, repo, groupdict):
+        if not isinstance(operation, repo_operation):
             raise Exception("illegal argument type")
-        return self._allow_access(user, operation, repo)
+        return self._allow_access(user, operation, repo, groupdict)
 
-    def _allow_access(self, user, operation, repo):
+    def _allow_access(self, user, operation, repo, groupdict):
         return retval_UNKNOWN
 
 class ReadRule(Rule):
-    def _allow_access(self, user, operation, repo):
+    def _allow_access(self, user, operation, repo, groupdict):
         if operation == op_READ:
             pass
         return retval_UNKNOWN
 
 class WriteRule(Rule):
-    def _allow_access(self, user, operation, repo):
+    def _allow_access(self, user, operation, repo, groupdict):
         if operation == op_READ or operation == op_WRITE:
             pass
         return retval_UNKNOWN
 
 class DenyRule(Rule):
-    def _allow_access(self, user, operation, repo):
-        if 
-        return retval_UNKNOWN
+    def _allow_access(self, user, operation, repo, groupdict):
+        if self.userRestr != [] and not  user in self.userRestr:
+            return retval_UNKNOWN
+        if self.groupRestr != []:
+            found = False
+            for g in self.grouprestr:
+                if user in groupdict[g]:
+                    found = True
+                    break
+            if not found:
+                return retval_UNKNOWN
+        if self.repo != []:
+            found = false
+            for r in self.repo:
+                if matchRepoPath(r, repo):
+                    found = True
+                    break
+            if not found:
+                return retval_UNKNOWN
+        return retval_DENY
 
 class InitRule(Rule):
-    def _allow_access(self, user, operation, repo):
+    def _allow_access(self, user, operation, repo, groupdict):
         if operation == op_CREATE:
             pass
         return retval_UNKNOWN
