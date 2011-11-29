@@ -44,43 +44,46 @@ class Rule:
     def _allow_access(self, user, operation, repo, groupdict):
         return retval_UNKNOWN
 
+    def _user_matches(self, user, groupdict):
+        if self.userRestr == [] and self.groupRestr == []:
+            return True
+        for g in self.grouprestr:
+            if user in groupdict[g]:
+                return True
+        return user in self.userRestr
+
+    def _repo_matches(self, repo):
+        if self.repoRestr == []:
+            return True
+        for r in self.repoRestr:
+            if matchRepoPath(r, repo):
+                return True
+        return False
+
 class ReadRule(Rule):
     def _allow_access(self, user, operation, repo, groupdict):
         if operation == op_READ:
-            pass
+            if self._user_matches(user, groupdict) and self._repo_matches(repo):
+                return retval_ALLOW
         return retval_UNKNOWN
 
 class WriteRule(Rule):
     def _allow_access(self, user, operation, repo, groupdict):
         if operation == op_READ or operation == op_WRITE:
-            pass
+            if self._user_matches(user, groupdict) and self._repo_matches(repo):
+                return retval_ALLOW
         return retval_UNKNOWN
 
 class DenyRule(Rule):
     def _allow_access(self, user, operation, repo, groupdict):
-        if self.userRestr != [] and not  user in self.userRestr:
-            return retval_UNKNOWN
-        if self.groupRestr != []:
-            found = False
-            for g in self.grouprestr:
-                if user in groupdict[g]:
-                    found = True
-                    break
-            if not found:
-                return retval_UNKNOWN
-        if self.repo != []:
-            found = false
-            for r in self.repo:
-                if matchRepoPath(r, repo):
-                    found = True
-                    break
-            if not found:
-                return retval_UNKNOWN
-        return retval_DENY
+        if self._user_matches(user, groupdict) and self._repo_matches(repo):
+            return retval_DENY
+        return retval_UNKNOWN
 
 class InitRule(Rule):
     def _allow_access(self, user, operation, repo, groupdict):
         if operation == op_CREATE:
-            pass
+            if self._user_matches(user, groupdict) and self._repo_matches(repo):
+                return retval_ALLOW
         return retval_UNKNOWN
 
