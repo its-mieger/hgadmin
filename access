@@ -1,4 +1,11 @@
-read group=bar,baz
-write user=foo,asdf
+# access configuration file
+# 4 different statements:
+# read, write, deny, init
+# syntax and semantics comparable to hgadmin
+read group=group1,nonexistinggroup
+write user=user1,user2
+read user=user3 group=group2
+read repo=sub1/**
+write user=bar repo=sub2/*
 deny repo=dontwrite
 init repo=everyoneallowed

@@ -1,4 +1,4 @@
 [paths]
-repopath = ~/sw/hgadmin-replacement/repos
+repopath = ~/sw/hgadmin-replacement/dummyrepos
 htpasswdpath = ~/sw/hgadmin-replacement/htpasswd
 sshauthkeyspath = ~/sw/hgadmin-replacement/authorized_ssh_keys
