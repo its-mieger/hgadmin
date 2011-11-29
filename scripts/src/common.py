@@ -1,9 +1,9 @@
-import re
+import re, os
 
 class namedclass:
     def __init__(self, name):     self.name = name
-    def __str__(self):            return str(self.__class__) + self.name
-    def __repr__(self):           return str(self)
+    def __str__(self):            return self.name
+    def __repr__(self):           return str(self.__class__) + self.name
 
 class rule_retval(namedclass):
     pass
@@ -29,14 +29,43 @@ def pat2re(pat):
         if matchobj.group() == '*':
             return '[^/]*'
         return re.escape(matchobj.group())
-    tmp = re.sub('\\*+|[^*]*', tmprep, pat)
+    tmp = '^' + re.sub('\\*+|[^*]*', tmprep, pat) + '$'
     # print tmp
     return re.compile(tmp)
 
 patdict = {}
 
-def matchRepoPath(pat, repo):
-    raise Exception("not implemented yet")
+def normalize_abspath(path):
+    return os.path.abspath(path)
+
+def normalize_relpath(path, root):
+    nroot = normalize_abspath(root)
+    apath = os.path.abspath(nroot + os.sep + path)
+    retpath = path[len(nroot):]
+    return retpath
+
+def valid_abspath(path):
+    realpath = normalize_abspath(path)
+    if realpath.find('"') != -1 or \
+            realpath.find(os.sep + '.hg' + os.sep) != -1  \
+            or realpath.endswith(os.sep + '.hg'):
+        return False
+    return True
+
+def valid_relpath(path, root):
+    nroot = normalize_abspath(root)
+    npath = normalize_abspath(root + os.sep + path)
+    if valid_abspath(npath) and npath.startswith(nroot):
+        return True
+    return False
+    
+
+def matchRepoPath(pat, repo, reporoot):
+    if not valid_relpath(repo, reporoot):
+        return "invalid"
+    nrepo = normalize_relpath(repo, reporoot)
     if not pat in patdict:
         patdict[pat] = pat2re(pat)
-    return patdict[pat].matches(repo)
+    if patdict[pat].match(nrepo):
+        return "match"
+    return "no_match"

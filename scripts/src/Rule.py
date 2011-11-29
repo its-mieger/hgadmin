@@ -47,7 +47,7 @@ class Rule:
     def _user_matches(self, user, groupdict):
         if self.userRestr == [] and self.groupRestr == []:
             return True
-        for g in self.grouprestr:
+        for g in self.groupRestr:
             if user in groupdict[g]:
                 return True
         return user in self.userRestr
@@ -87,3 +87,11 @@ class InitRule(Rule):
                 return retval_ALLOW
         return retval_UNKNOWN
 
+def check_rules(user, op, groupdict, repo, rulelist):
+    retval = retval_UNKNOWN
+    for rule in rulelist:
+        ruleres = rule.allow_access(user, op, repo, groupdict)
+        print "check: " + repr(rule) + " result: " + str(ruleres)
+        if ruleres != retval_UNKNOWN and retval == retval_UNKNOWN:
+            retval = ruleres
+    return retval

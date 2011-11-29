@@ -1,7 +1,8 @@
 # example groups file
 # syntax: groupname ":" user1 user2 ...
 # if a line starts with whitespace or a comment and does not contain ":",
-# it is a "continuation line" and contains additional users for the previous line 
+# it is a "continuation line" and contains 
+# additional users for the previous line 
 
 
 group1: another_user nonexisting_user

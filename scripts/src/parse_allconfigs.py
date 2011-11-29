@@ -22,12 +22,15 @@ def parse_groups(groupsfile):
         isContLine = (line[0] in string.whitespace or line[0] == '#')
         if line.find('#') != -1:
             line = line[:line.find('#')]
+        line = line.strip()
+        if line == '':
+            continue
         if line.find(':') == -1:
             if currgroup == None or not isContLine:
                 raise Exception("could not parse group file")
             spline = line.split()
             for uname in spline:
-                ret[currgroup].add(uname)
+                ret[currgroup].append(uname)
         else:
             groupcand = (line[:line.find(':')]).split()
             groupmemb = (line[line.find(':')+1:]).split()
@@ -36,9 +39,9 @@ def parse_groups(groupsfile):
             currgroup = groupcand[0]
             if currgroup in ret:
                 raise Exception("group defined twice")
-            ret[currgroup] = set()
+            ret[currgroup] = []
             for uname in groupmemb:
-                ret[currgroup].add(uname)                
+                ret[currgroup].append(uname)                
     return ret
 
 def parse_access(accessconffile):
@@ -77,7 +80,6 @@ def valid_name(name):
     return True
 
 def parse_allconfigs(confdir):
-
     userFile = os.path.join(confdir, 'users')
     groupFile = os.path.join(confdir, 'groups')
     accessFile = os.path.join(confdir, 'access')
@@ -102,18 +104,26 @@ def parse_allconfigs(confdir):
     for u in userlist:
         if not valid_name(u):
             print "Warning: User %s has invalid name" % u
+            userlist.remove(u)
+    todelete = set()
     for g in groupdict:
         if not valid_name(g):
             print "Warning: Group %s has invalid name" % g
+            todelete.add(g)
+    for g in todelete: del groupdict[g]
+    for g in groupdict:
         for u in groupdict[g]:
             if not u in userlist:
                 print "Warning: Group %s refers to undefined user %s" %(g, u)
+                groupdict[g].remove(u)
     for r in accessRuleList:
         for g in r.groupRestr:
             if not g in groupdict:
                 print "Warning: Rule %s refers to undefined group %s" %(r, g)
+                r.groupRestr.remove(g)
         for u in r.userRestr:
             if not u in userlist:
                 print "Warning: Rule %s refers to undefined user %s" %(r, u)
+                r.userRestr.remove(u)
     
     return { "userlist": userlist, "groupdict": groupdict, "accessRuleList": accessRuleList, "confdict": confdict }

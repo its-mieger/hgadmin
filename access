@@ -3,6 +3,8 @@
 # read, write, deny, init
 # syntax and semantics comparable to hgadmin
 read group=group1,nonexistinggroup
+read repo=repo1
+deny user=user3
 write user=user1,user2
 read user=user3 group=group2
 read repo=sub1/**
