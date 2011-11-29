@@ -1,6 +1,7 @@
 """ support for parsing user, group and access configuration files """
 
 import os
+import ConfigParser
 import string
 from Rule import ReadRule, InitRule, WriteRule, DenyRule
 
@@ -60,25 +61,37 @@ def parse_access(accessconffile):
         pass
     return rulelist
 
+def parse_conf(conffile):
+    p = ConfigParser.RawConfigParser()
+    p.readfp(conffile)
+    optdict = {}
+    for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath']:
+        optdict[option] = os.path.expanduser(p.get('paths', option))
+    return optdict
+    
 
 def parse_allconfigs(confdir):
 
-    userFile = os.path.expanduser(confdir + '/' + 'users')
-    groupFile = os.path.expanduser(confdir + '/' + 'groups')
-    accessFile = os.path.expanduser(confdir + '/' + 'access')
+    userFile = os.path.join(confdir, 'users')
+    groupFile = os.path.join(confdir, 'groups')
+    accessFile = os.path.join(confdir, 'access')
+    confFile = os.path.join(confdir, 'config')
 
     userfd = open(userFile)
     groupfd = open(groupFile)
     accessfd = open(accessFile)
+    conffd = open(confFile)
 
-    userlist = parse_users.parse_users(userfd)
-    groupdict = parse_groups.parse_groups(groupfd)
-    accessRuleList = parse_access.parse_access(accessfd)
+    userlist = parse_users(userfd)
+    groupdict = parse_groups(groupfd)
+    accessRuleList = parse_access(accessfd)
+    confdict = parse_conf(conffd)
 
     accessfd.close()
     groupfd.close()
     userfd.close()
-    
+    conffd.close()
+
     # now some sanity checks:
     for g in groupdict:
         for u in groupdict[g]:
@@ -92,4 +105,4 @@ def parse_allconfigs(confdir):
             if not u in userlist:
                 print "Warning: Rule %s refers to undefined user %s" %(r, u)
     
-    return { "userlist": userlist, "groupdict": groupdict, "accessRuleList": accessRuleList }
+    return { "userlist": userlist, "groupdict": groupdict, "accessRuleList": accessRuleList, "confdict": confdict }

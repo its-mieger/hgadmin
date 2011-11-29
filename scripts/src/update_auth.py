@@ -1,5 +1,5 @@
 #! /usr/bin/env python 
 
-import parse_allconfigs, sys
+import parse_allconfigs, sys, os
 
-print parse_allconfigs.parse_allconfigs(sys.argv[1])
+print parse_allconfigs.parse_allconfigs(os.path.expanduser(sys.argv[1]))

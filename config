@@ -1,2 +1,4 @@
-
+[paths]
 repopath = ~/sw/hgadmin-replacement/repos
+htpasswdpath = ~/sw/hgadmin-replacement/htpasswd
+sshauthkeyspath = ~/sw/hgadmin-replacement/authorized_ssh_keys
