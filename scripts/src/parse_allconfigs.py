@@ -68,7 +68,13 @@ def parse_conf(conffile):
     for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath']:
         optdict[option] = os.path.expanduser(p.get('paths', option))
     return optdict
-    
+
+def valid_name(name):
+    validchars = string.letters + string.digits + '_-+&'
+    for c in name:
+        if not c in validchars:
+            return False
+    return True
 
 def parse_allconfigs(confdir):
 
@@ -93,7 +99,12 @@ def parse_allconfigs(confdir):
     conffd.close()
 
     # now some sanity checks:
+    for u in userlist:
+        if not valid_name(u):
+            print "Warning: User %s has invalid name" % u
     for g in groupdict:
+        if not valid_name(g):
+            print "Warning: Group %s has invalid name" % g
         for u in groupdict[g]:
             if not u in userlist:
                 print "Warning: Group %s refers to undefined user %s" %(g, u)
