@@ -49,6 +49,21 @@ def valid_name(name):
             return False
     return True
 
+def valid_repopath(repo):
+    if not repo.startswith(os.sep):
+        return False
+    if repo.endswith('**'):
+        repo = repo[:-2]
+    elif repo.endswith('*'):
+        repo = repo[:-1]
+    if repo.find('*') != -1:
+        return False
+    if repo.find(os.sep + '.hg' + os.sep) != -1:
+        return False
+    if repo.endswith(os.sep + '.hg'):
+        return False
+    return True
+
 def parse_allconfigs(confdir):
     accessFile = os.path.join(confdir, 'access')
     confFile = os.path.join(confdir, 'config')
@@ -61,11 +76,6 @@ def parse_allconfigs(confdir):
 
     accessfd.close()
     conffd.close()
-
-    print userlist
-    print confdict
-    print groupdict
-    print accessdict
 
     # now some sanity checks:
     for u in userlist:
@@ -83,8 +93,12 @@ def parse_allconfigs(confdir):
             if not u in userlist:
                 print "Warning: Group %s refers to undefined user %s" %(g, u)
                 groupdict[g].remove(u)
+    todelete = []
     for repo in accessdict:
-        
+        if not valid_repopath(repo):
+            print 'Warning: repo path %s is invalid' % repo
+            todelete.append(repo)
+            continue
         for ug in accessdict[repo]:
             for accesstype in accessdict[repo][ug]:
                 for userorgroup in accessdict[repo][ug][accesstype]:
@@ -95,5 +109,8 @@ def parse_allconfigs(confdir):
                     if ug == 'group' and not userorgroup in groupdict:
                         print "Warning: repo access to %s refers to undefined group %s" %(repo, userorgroup)
                         accessdict[repo][ug][accesstype].remove(userorgroup)
-    exit(0)
-    return { "userlist": userlist, "groupdict": groupdict, "accessRuleList": accessRuleList, "confdict": confdict }
+    for t in todelete:
+        del accessdict[t]
+    retval = { "userlist": userlist, "groupdict": groupdict, "accessdict": accessdict, "confdict": confdict } 
+    print retval
+    return retval
