@@ -1,13 +1,34 @@
+[/]
+
+user1 = r
+user2 = r w
+nonexistentuser = Cw
+
+[/repo1]
+
+@group1 = r
+@group2 = wr
+@nonexistentgroup = rwC
+
+[/sub1/*]
+user2 = Cw
+
+[/sub2/**]
+
+[/sub2/*]
+
+
+
 # access configuration file
 # 4 different statements:
 # read, write, deny, init
 # syntax and semantics comparable to hgadmin
-read group=group1,nonexistinggroup
-read repo=repo1
-deny user=user3
-write user=user1,user2
-read user=user3 group=group2
-read repo=sub1/**
-write user=bar repo=sub2/*
-deny repo=dontwrite
-init repo=everyoneallowed
+# read group=group1,nonexistinggroup
+# read repo=repo1
+# deny user=user3
+# write user=user1,user2
+# read user=user3 group=group2
+# read repo=sub1/**
+# write user=bar repo=sub2/*
+# deny repo=dontwrite
+# init repo=everyoneallowed

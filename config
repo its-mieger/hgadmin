@@ -2,3 +2,16 @@
 repopath = ~/sw/hgadmin-replacement/dummyrepos
 htpasswdpath = ~/sw/hgadmin-replacement/htpasswd
 sshauthkeyspath = ~/sw/hgadmin-replacement/authorized_ssh_keys
+
+[groups]
+group1 = user1, user2
+group2 = user3, user5, user6
+
+[users]
+users = user1, user2,
+# strange user with own description:
+  user3,
+# another user description
+  another_user,
+# and another user description
+  user4
