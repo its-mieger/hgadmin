@@ -3,7 +3,6 @@
 import os
 import ConfigParser
 import string
-from Rule import ReadRule, InitRule, WriteRule, DenyRule
 
 def parse_access(accessconffile):
     p = ConfigParser.RawConfigParser()
