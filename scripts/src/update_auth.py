@@ -22,12 +22,18 @@ else:
     exit(1)
 
 access.find_matching_repopat(conf['accessdict'], path)
+
+for repo in repolist:
+    gen_hgrc(repo, conf['accessdict'], conf['groupdict'], conf['userlist'], conf['confdict']['globalhgrc'])
+
+gen_authkeys(conf['userlist'], conf['keydir'], conf['authkeypath'])
+
 exit(0)
 
-for user in conf['userlist']:
-    print "user: " + user
-    for repo in repolist:
-        print "repo: " + repo
+# for user in conf['userlist']:
+#     print "user: " + user
+#     for repo in repolist:
+#         print "repo: " + repo
         # for op in ['read', 'write', 'create']:
         #     print "op: " + op
 
