@@ -71,5 +71,5 @@ def find_matching_repopat(accessdict, path):
     return touse
 
 def allow(op, user, repo, accessdict, groupdict):
-    return False
+    return True
     

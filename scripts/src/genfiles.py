@@ -1,4 +1,4 @@
-import os, access
+import os, access, subprocess
 
 def replacefile(targetpath, newsuffix, backupsuffix):
     b = targetpath + backupsuffix
@@ -51,23 +51,38 @@ def gen_hgrc(repo, accessdict, groupdict, userlist, globalhgrcprefix):
     tmpfile.close()
     replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
 
+def fetchkey(keyfile):
+    try:
+        key = subprocess.check_output(["ssh-keygen", "-i", "-f", keyfile])
+        return [key]
+    except subprocess.CalledProcessError as e:
+        pass
+    try:
+        return [ x.strip() for x in open(keyfile).readlines() ]
+    except Exception as e:
+        # raise e
+        return None
+
 def gen_authkeys(userlist, keydir, authkeypath):
     print "gen_authkeys", userlist, keydir, authkeypath
     tmppath = authkeypath +"_tmp"
     tmpfile = open(tmppath, "w")
     for user in userlist:
+        print "authkeys:", user
+        print "path: " , keydir + '/' + user
         l = []
         try:
-            l = os.listdir(authkeypath + '/' + user)
+            l = os.listdir(keydir + '/' + user)
         except OSError as e:
             continue
         for keyfile in l:
-            p = authkeypath + '/' + user + '/' + keyfile
-            try:
-                key = subprocess.check_output(["ssh-keygen", "-i", "-f", p])
-            except CalledProcessError as e:
+            print "authkeys: file ", keyfile
+            p = keydir + '/' + user + '/' + keyfile
+            keylist = fetchkey(p)
+            if keylist == None:
                 continue
-            tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
-            tmpfile.write("\"/bin/sh -c  'echo \"$SSH_ORIGINAL_COMMAND\" >> /tmp/foobar'\" " + key + '\n')
+            for key in keylist:
+                tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
+                tmpfile.write('"sshwrapper ' + user + ' " ' + key + '\n')
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
