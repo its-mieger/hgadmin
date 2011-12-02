@@ -2,6 +2,8 @@
 repopath = ~/sw/hgadmin-replacement/dummyrepos
 htpasswdpath = ~/sw/hgadmin-replacement/htpasswd
 sshauthkeyspath = ~/sw/hgadmin-replacement/authorized_ssh_keys
+globalhgrc = ~/sw/hgadmin-replacement/hgrc
+sshkeydir = ~//sw/hgadmin-replacement/keys
 
 [groups]
 group1 = user1, user2

@@ -1,6 +1,6 @@
 #! /usr/bin/env python 
 
-import repo, parse_allconfigs, access, sys, os
+import repo, parse_allconfigs, access, sys, os, genfiles
 
 basedir = os.path.expanduser(sys.argv[1])
 conf = parse_allconfigs.parse_allconfigs(basedir)
@@ -24,9 +24,9 @@ else:
 access.find_matching_repopat(conf['accessdict'], path)
 
 for repo in repolist:
-    gen_hgrc(repo, conf['accessdict'], conf['groupdict'], conf['userlist'], conf['confdict']['globalhgrc'])
+    genfiles.gen_hgrc(repo, conf['accessdict'], conf['groupdict'], conf['userlist'], conf['confdict']['globalhgrc'])
 
-gen_authkeys(conf['userlist'], conf['keydir'], conf['authkeypath'])
+genfiles.gen_authkeys(conf['userlist'], conf['confdict']['sshkeydir'], conf['confdict']['sshauthkeyspath'])
 
 exit(0)
 

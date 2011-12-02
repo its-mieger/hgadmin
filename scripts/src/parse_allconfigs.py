@@ -34,7 +34,7 @@ def parse_conf(conffile):
     p.readfp(conffile)
     optdict = {}
     groupdict = {}
-    for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath']:
+    for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath', 'globalhgrc', 'sshkeydir']:
         optdict[option] = os.path.expanduser(p.get('paths', option))
     for group in p.options('groups'):
         groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]

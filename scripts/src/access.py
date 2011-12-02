@@ -69,4 +69,7 @@ def find_matching_repopat(accessdict, path):
         else:
             print "no match"
     return touse
+
+def allow(op, user, repo, accessdict, groupdict):
+    return False
     
