@@ -1,6 +1,16 @@
 from mercurial import ui, hg
 import os
 
+def is_managed_repo(repopath, root):
+    repopath = root + '/' + repopath
+    if not os.access(repopath, os.F_OK):
+        return False
+    if not os.access(repopath + '/.hg', os.F_OK):
+        return False
+    if not os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK):
+        return False
+    return True
+
 def list_all_repos(repopath):
     tmplist = []
     repolist = []

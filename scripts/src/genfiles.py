@@ -46,10 +46,10 @@ def gen_hgrc(repo, accessdict, groupdict, userlist, globalhgrcprefix):
         tmpfile.write(sep + user)
         sep = ', '
     tmpfile.write("\n")
-    tmpfile.write("\n[hooks]\npretxnchangegroup.accesscontrol = python:foobar\n")
-    tmpfile.write("prechangegroup.accesscontrol = python:foobar\n")
-    tmpfile.write('prechangegroup.accesscontrolviash =  /bin/sh -c "test ! -z \"\$HGADMIN_WRITE_ALLOWED\"; return \$?;"' + '\n')
-    tmpfile.write('pretxnchangegroup.accesscontrolviash = /bin/sh -c "test ! -z \"\$HGADMIN_WRITE_ALLOWED\"; return \$?;"' + '\n')
+    # tmpfile.write("\n[hooks]\npretxnchangegroup.accesscontrol = python:foobar\n")
+    # tmpfile.write("prechangegroup.accesscontrol = python:foobar\n")
+    # tmpfile.write('prechangegroup.accesscontrolviash =  /bin/sh -c "test ! -z \"\$HGADMIN_WRITE_ALLOWED\"; return \$?;"' + '\n')
+    # tmpfile.write('pretxnchangegroup.accesscontrolviash = /bin/sh -c "test ! -z \"\$HGADMIN_WRITE_ALLOWED\"; return \$?;"' + '\n')
     tmpfile.close()
     replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
 
