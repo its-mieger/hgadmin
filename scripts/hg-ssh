@@ -15,10 +15,10 @@ def sanitize_path(path):
     path = os.path.abspath(path)
     if path.find('"') != -1 or path.find('/.') != -1 or os.sep != '/':
         fail("invalid repository path")
-    if not os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK):
-        fail("path does not refer to managed repository")
     return path
 
+def is_managed_path(path):
+    return os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
 
 def parse_cmd():
     origcmd =  os.environ.get('SSH_ORIGINAL_COMMAND', None)
@@ -53,22 +53,67 @@ def allow_access(repo, user, access):
             return False
         if allowread == ['*'] or user in allowread:
             return True
+        return False
     elif access == 'write':
         if denywrite == ['*'] or user in denywrite:
             return False
         if allowwrite == ['*'] or user in allowwrite:
             return True
+        return False
     else:
         return False
 
+def create_impl(user, repo):
+    fail("not implemented yet")
+    import site
+    homedir = os.path.dirname(os.path.dirname(sys.argv[0]))
+    
+    site.addsitedir(homedir+'/scripts/src')
+    import parse_allconfigs, access
+
+    conf = parse_allconfigs.parse_allconfigs(homedir)
+    if not user in conf['userlist']:
+        fail("unknown user")
+    if is_managed_path(repo):
+        fail("path already contains managed repository")
+    if not access.validate_path(targetrepo) or not repo.is_managed_repo(targetrepo, conf['confdict']['reporoot']):
+        fail("invalid path")
+    allow_create = access.allow("create", user, repo, conf['accessdict'], conf['groupdict'])
+    if not allow_create:
+        fail("access denied")
+    dispatch.dispatch(request(['init', targetrepo]))
+    # FIXME: hgrc generieren und managed-by-datei dazu
+
+def serve_impl(user, repo):
+    if not is_managed_path(repo):
+        fail("path contains no managed repository")
+    from mercurial import demandimport; demandimport.enable()
+    from mercurial import dispatch, hg, ui
+    try:
+        request = dispatch.request
+    except AttributeError:
+        request = list
+    if not allow_access(repo, user, "read"):
+        fail("invalid privilege")
+    rqlist = ['-R', targetrepo, 'serve', '--stdio']
+    if not allow_access(repo, user, "write"):
+        rqlist += ['--config', 'hooks.prechangegroup=false', '--config', 'hooks.pretxnchangegroup=false']
+    dispatch.dispatch(request(rqlist))
+
+def main():
+    user = extractuser()
+    cmd, repo = parse_cmd()
+    if cmd == "serve":
+        serve_impl(user,repo)
+    elif cmd == "create":
+        create_impl(user,repo)
+    else:
+        fail("invalid command")
+
+if __name__ == "main":
+    main()
 
 # enable importing on demand to reduce startup time
-from mercurial import demandimport; demandimport.enable()
-from mercurial import dispatch
-try:
-    request = dispatch.request
-except AttributeError:
-    request = list
 
 import sys, os, site, re
 
