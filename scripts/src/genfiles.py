@@ -18,7 +18,12 @@ def replacefile(targetpath, newsuffix, backupsuffix):
     except:
         pass
 
-def gen_hgrc(repo, accessdict, groupdict, userlist, globalhgrcprefix):
+def gen_hgrc(repo, confdict):
+    conf = confdict
+    accessdict =  conf['groupdict']
+    groupdict= conf['accessdict']
+    userlist =  conf['userlist']
+    globalhgrcprefix = conf['confdict']['globalhgrc']
     print "gen_hgrc", repo, accessdict, groupdict, userlist, globalhgrcprefix
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
@@ -65,7 +70,10 @@ def fetchkey(keyfile):
         # raise e
         return None
 
-def gen_authkeys(userlist, keydir, authkeypath):
+def gen_authkeys(confdict):
+    userlist = confdict['userlist']
+    keydir = confdict['confdict']['sshkeydir']
+    authkeypath = confdict['confdict']['sshauthkeyspath']
     print "gen_authkeys", userlist, keydir, authkeypath
     tmppath = authkeypath +"_tmp"
     tmpfile = open(tmppath, "w")

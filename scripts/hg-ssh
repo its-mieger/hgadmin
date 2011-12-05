@@ -44,10 +44,10 @@ def parse_cmd():
     
 def allow_access(repo, user, access):
     repo = hg.repository(ui.ui(), repo)
-    denyread   = [ x.strip() for x in ui.config("web", "deny_read")  .split(',') ]
-    allowread  = [ x.strip() for x in ui.config("web", "allow_read") .split(',') ]
-    denywrite  = [ x.strip() for x in ui.config("web", "deny_write") .split(',') ]
-    allowwrite = [ x.strip() for x in ui.config("web", "allow_write").split(',') ]
+    denyread   = ui.configlist("web", "deny_read")  
+    allowread  = ui.configlist("web", "allow_read") 
+    denywrite  = ui.configlist("web", "deny_write") 
+    allowwrite = ui.configlist("web", "allow_write")
     if access == 'read':
         if denyread == ['*'] or user in denyread:
             return False
@@ -82,7 +82,10 @@ def create_impl(user, repo):
     if not allow_create:
         fail("access denied")
     dispatch.dispatch(request(['init', targetrepo]))
-    # FIXME: hgrc generieren und managed-by-datei dazu
+    genfiles.gen_hgrc(repo, conf)
+    x = open(repo+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
+    x.write("foo")
+    x.close()
 
 def serve_impl(user, repo):
     if not is_managed_path(repo):
@@ -99,6 +102,7 @@ def serve_impl(user, repo):
     if not allow_access(repo, user, "write"):
         rqlist += ['--config', 'hooks.prechangegroup=false', '--config', 'hooks.pretxnchangegroup=false']
     dispatch.dispatch(request(rqlist))
+
 
 def main():
     user = extractuser()

@@ -24,9 +24,9 @@ else:
 access.find_matching_repopat(conf['accessdict'], path)
 
 for repo in repolist:
-    genfiles.gen_hgrc(repo, conf['accessdict'], conf['groupdict'], conf['userlist'], conf['confdict']['globalhgrc'])
+    genfiles.gen_hgrc(repo, conf)
 
-genfiles.gen_authkeys(conf['userlist'], conf['confdict']['sshkeydir'], conf['confdict']['sshauthkeyspath'])
+genfiles.gen_authkeys(conf)
 
 exit(0)
 
