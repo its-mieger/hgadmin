@@ -10,10 +10,9 @@ def extractuser():
     return sys.argv[1]
 
 def sanitize_path(path):
-    path = path.strip()
-    path = path.strip('"')
-    path = os.path.abspath(path)
-    if path.find('"') != -1 or path.find('/.') != -1 or os.sep != '/':
+    path = path.strip().strip('"')
+    path = os.path.abspath(os.path.expanduser('~'), path)
+    if len(path) == 0 or path.find('"') != -1 or path.find('/.') != -1 or os.sep != '/':
         fail("invalid repository path")
     return path
 
@@ -21,12 +20,12 @@ def is_managed_path(path):
     return os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
 
 def parse_cmd():
-    origcmd =  os.environ.get('SSH_ORIGINAL_COMMAND', None)
+    origcmd = os.environ.get('SSH_ORIGINAL_COMMAND', None)
     if origcmd == None:
         fail("started directly")
 
-    match_serve  = re.match('^hg -R (.*) serve --stdio$', origcmd)
-    match_init = re.match('^hg init (.*)$', origcmd)
+    match_serve = re.match('^hg -R (.*) serve --stdio$', origcmd)
+    match_init  = re.match('^hg init (.*)$', origcmd)
 
     if not match_init and not match_serve:
         fail("invalid command")
@@ -44,10 +43,10 @@ def parse_cmd():
     
 def allow_access(repo, user, access):
     repo = hg.repository(ui.ui(), repo)
-    denyread   = ui.configlist("web", "deny_read")  
-    allowread  = ui.configlist("web", "allow_read") 
-    denywrite  = ui.configlist("web", "deny_write") 
-    allowwrite = ui.configlist("web", "allow_write")
+    denyread   = repo.ui.configlist("web", "deny_read")  
+    allowread  = repo.ui.configlist("web", "allow_read") 
+    denywrite  = repo.ui.configlist("web", "deny_write") 
+    allowwrite = repo.ui.configlist("web", "allow_write")
     if access == 'read':
         if denyread == ['*'] or user in denyread:
             return False
@@ -63,30 +62,6 @@ def allow_access(repo, user, access):
     else:
         return False
 
-def create_impl(user, repo):
-    fail("not implemented yet")
-    import site
-    homedir = os.path.dirname(os.path.dirname(sys.argv[0]))
-    
-    site.addsitedir(homedir+'/scripts/src')
-    import parse_allconfigs, access
-
-    conf = parse_allconfigs.parse_allconfigs(homedir)
-    if not user in conf['userlist']:
-        fail("unknown user")
-    if is_managed_path(repo):
-        fail("path already contains managed repository")
-    if not access.validate_path(targetrepo) or not repo.is_managed_repo(targetrepo, conf['confdict']['reporoot']):
-        fail("invalid path")
-    allow_create = access.allow("create", user, repo, conf['accessdict'], conf['groupdict'])
-    if not allow_create:
-        fail("access denied")
-    dispatch.dispatch(request(['init', targetrepo]))
-    genfiles.gen_hgrc(repo, conf)
-    x = open(repo+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
-    x.write("foo")
-    x.close()
-
 def serve_impl(user, repo):
     if not is_managed_path(repo):
         fail("path contains no managed repository")
@@ -97,7 +72,7 @@ def serve_impl(user, repo):
     except AttributeError:
         request = list
     if not allow_access(repo, user, "read"):
-        fail("invalid privilege")
+        fail("insufficient privilege")
     rqlist = ['-R', targetrepo, 'serve', '--stdio']
     if not allow_access(repo, user, "write"):
         rqlist += ['--config', 'hooks.prechangegroup=false', '--config', 'hooks.pretxnchangegroup=false']
@@ -114,48 +89,21 @@ def main():
     else:
         fail("invalid command")
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
 
-# enable importing on demand to reduce startup time
+def create_impl_dummy(user, repo):
+    fail("repository creation deactivated")
 
-import sys, os, site, re
+# you can omit the rest if you want to use this script standalone
+# and do not need users' ability to create repos
+# of course, you should rename create_impl_dummy to create_impl...
 
-user = sys.argv[1]
-homedir = os.path.dirname(os.path.dirname(sys.argv[0]))
-
-site.addsitedir(homedir+'/scripts/src')
-import parse_allconfigs, access
-
-conf = parse_allconfigs.parse_allconfigs(homedir)
-if not user in conf['userlist']:
-    fail("unknown user")
+def create_impl(user, repo):
+    import site
+    homedir = os.path.dirname(os.path.dirname(sys.argv[0]))
+    site.addsitedir(homedir+'/scripts/src')
+    import repocreate
+    repocreate.check_maybe_create_repo(user, repo)
 
 
-print repr(targetrepo)
-
-targetrepo = access.sanitize_path(targetrepo)
-
-if not access.validate_path(targetrepo) or not repo.is_managed_repo(targetrepo, conf['confdict']['reporoot']):
-    fail("invalid path")
-
-if match_serve:
-    allow_write = repo.allow_writeaccess(targetrepo, user)
-    allow_read = repo.allow_readaccess(targetrepo, user)
-    if allow_write:
-        dispatch.dispatch(request(['-R', targetrepo, 'serve', '--stdio']))
-    elif allow_read:
-        dispatch.dispatch(request(['-R', targetrepo, 'serve', \
-                    '--stdio', '--config', 'hooks.prechangegroup=false', \
-                    '--config', 'hooks.pretxnchangegroup=false']))
-    else:
-        fail("access denied")
-elif match_init:
-    allow_create = access.allow("create", user, targetrepo, conf['accessdict'], conf['groupdict'])
-    if allow_create:
-         dispatch.dispatch(request(['init', targetrepo]))
-    else:
-        fail("access denied")
-else:
-    fail("internal error")
-    

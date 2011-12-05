@@ -22,22 +22,21 @@ def list_all_repos(repopath):
             repolist.append(p)
     return repolist
 
-def allow_readaccess(repo, user):
-    repo = hg.repository(ui.ui(), repo)
-    denyread = ui.config("web", "deny_read")
-    allowread = ui.config("web", "allow_read")
-    if denyread == ['*'] or user in denyread:
-        return False
-    if allowread == ['*'] or user in allowread:
-        return True
-    return False
 
-def allow_writeaccess(repo, user):
-    repo = hg.repository(ui.ui(), repo)
-    denywrite = ui.config("web", "deny_write")
-    allowwrite = ui.config("web", "allow_write")
-    if denywrite == ['*'] or user in denywrite:
-        return False
-    if allowwrite == ['*'] or user in allowwrite:
-        return True
-    return False
+def check_maybe_create_repo(user, repo):
+    sys.exit(-1)
+    conf = parse_allconfigs.parse_allconfigs(homedir)
+    if not user in conf['userlist']:
+        fail("unknown user")
+    if is_managed_path(repo):
+        fail("path already contains managed repository")
+    if not access.validate_path(targetrepo) or not repo.is_managed_repo(targetrepo, conf['confdict']['reporoot']):
+        fail("invalid path")
+    allow_create = access.allow("create", user, repo, conf['accessdict'], conf['groupdict'])
+    if not allow_create:
+        fail("access denied")
+    dispatch.dispatch(request(['init', targetrepo]))
+    genfiles.gen_hgrc(repo, conf)
+    x = open(repo+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
+    x.write("foo")
+    x.close()
