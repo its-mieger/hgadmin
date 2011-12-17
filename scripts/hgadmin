@@ -1,0 +1,22 @@
+#! /usr/bin/env python
+
+import sys
+
+def usage(name):
+    print """usage: %s mkrepo USER PATH -- creates repository at PATH, if USER is allowed.
+                              PATH is relative to configured repo directory.
+       %s updateauth       -- updates authorization information in the managed 
+                              repositories, regenerates authorized_keys file etc
+                              
+""" % (name, name)
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    if len(sys.args) == 3 and sys.args[1] == "mkrepo":
+        pass
+    elif len(sys.args) == 2 and sys.args[1] == "updateauth":
+        pass
+    else:
+        usage(sys.args[0])
+

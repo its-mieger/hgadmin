@@ -1,9 +1,9 @@
 [paths]
-repopath = ~/sw/hgadmin-replacement/dummyrepos
-htpasswdpath = ~/sw/hgadmin-replacement/htpasswd
-sshauthkeyspath = ~/sw/hgadmin-replacement/authorized_ssh_keys
-globalhgrc = ~/sw/hgadmin-replacement/hgrc
-sshkeydir = ~//sw/hgadmin-replacement/keys
+repopath = ~/repos
+htpasswdpath = ~/htpasswd
+sshauthkeyspath = ~/authorized_ssh_keys
+globalhgrc = ~/hgadmin/hgrc
+sshkeydir = ~/hgadmin/keys
 
 [groups]
 group1 = user1, user2
