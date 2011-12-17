@@ -1,6 +1,10 @@
 #! /usr/bin/env python
 
-import sys
+import ConfigParser, string, sys, os, re
+from mercurial import ui, hg
+
+# directory where hgadmin searches for its configuration
+BASEDIR='~/hgadmin'
 
 def usage(name):
     print """usage: %s mkrepo USER PATH -- creates repository at PATH, if USER is allowed.
@@ -9,14 +13,361 @@ def usage(name):
                               repositories, regenerates authorized_keys file etc
                               
 """ % (name, name)
-    sys.exit(1)
 
+config = None
 
 if __name__ == "__main__":
-    if len(sys.args) == 3 and sys.args[1] == "mkrepo":
-        pass
+    main()
+
+def main():
+    if len(sys.args) == 4 and sys.args[1] == "mkrepo":
+        config = parse_allconfigs(os.path.expanduser(BASEDIR))
+        gen_repo(sys.args[2], sys.args[3])
+        exit(0)
     elif len(sys.args) == 2 and sys.args[1] == "updateauth":
-        pass
+        config = parse_allconfigs(os.path.expanduser(BASEDIR))
+        update_auth()
+        exit(0)
     else:
         usage(sys.args[0])
+        exit(1)
 
+def fail(message):
+    print message
+    exit(1)
+
+def gen_repo(user, unsanitized_repopath):
+    path = unsanitized_repopath
+    print "unsanitized path: " + repr(path)
+    path = sanitize_path(path)
+    print "sanitized path: " + repr(path)
+    if validate_path(path):
+        print "valid"
+    else:
+        print "invalid path!"
+        exit(1)
+    if not user in config['userlist']:
+        fail("unknown user")
+    if is_managed_path(repo):
+        fail("path already contains managed repository")
+    if not validate_path(targetrepo) or not is_managed_repo(targetrepo):
+        fail("invalid path")
+    allow_create = access.allow("create", user, repo)
+    if not allow_create:
+        fail("access denied")
+    dispatch.dispatch(request(['init', targetrepo]))
+    genfiles.gen_hgrc(repo, conf)
+    x = open(repo+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
+    x.write("foo")
+    x.close()
+
+
+def update_auth():
+    repolist = list_all_repos()
+    for repo in repolist:
+        gen_hgrc(repo)
+    gen_authkeys()
+    gen_htaccess()
+
+def list_all_repos():
+    repolist = []
+    for root, dirs, files in os.walk(config['confdict']['repopath'], topdown=True):
+        if is_managed_repo(root):
+            repolist.append(root)
+        if '.hg' in dirs: 
+            dirs.remove('.hg')
+    return repolist
+
+def is_managed_repo(repo):
+    root = config['confdict']['repopath']
+    repopath = root + '/' + repopath
+    if not os.access(repopath, os.F_OK):
+        return False
+    if not os.access(repopath + '/.hg', os.F_OK):
+        return False
+    if not os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK):
+        return False
+    return True
+
+
+def check_maybe_create_repo(user, repo):
+
+""" support for parsing user, group and access configuration files """
+
+
+def parse_access(accessconffile):
+    p = ConfigParser.RawConfigParser()
+    p.readfp(accessconffile)
+    accessdict = {}
+    for path in p.sections():
+        accessdict.setdefault(path, {})
+        for userorgroup, accesstype in p.items(path):
+            if userorgroup[0] == '@':
+                prefix = 'group'
+                realname = userorgroup[1:]
+            else:
+                prefix = 'user'
+                realname = userorgroup
+            accessdict[path].setdefault(prefix, {})
+            if 'r' in accesstype:
+                accessdict[path][prefix].setdefault("read", [])
+                accessdict[path][prefix]["read"].append(realname)
+            if 'w' in accesstype:
+                accessdict[path][prefix].setdefault("write", [])
+                accessdict[path][prefix]["write"].append(realname)
+            if 'C' in accesstype:
+                accessdict[path][prefix].setdefault("create", [])
+                accessdict[path][prefix]["create"].append(realname)
+    return accessdict
+
+def parse_conf(conffile):
+    p = ConfigParser.RawConfigParser()
+    p.readfp(conffile)
+    optdict = {}
+    groupdict = {}
+    for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath', 'globalhgrc', 'sshkeydir']:
+        optdict[option] = os.path.expanduser(p.get('paths', option))
+    for group in p.options('groups'):
+        groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]
+    userlist = [x.strip() for x in p.get('users', 'users').split(',')]
+    return (optdict, groupdict, userlist)
+
+def valid_name(name):
+    validchars = string.letters + string.digits + '_-+&'
+    for c in name:
+        if not c in validchars:
+            return False
+    return True
+
+def valid_repopath(repo):
+    if not repo.startswith(os.sep):
+        return False
+    if repo.endswith('**'):
+        repo = repo[:-2]
+    elif repo.endswith('*'):
+        repo = repo[:-1]
+    if repo.find('*') != -1:
+        return False
+    if repo.find(os.sep + '.hg' + os.sep) != -1:
+        return False
+    if repo.endswith(os.sep + '.hg'):
+        return False
+    return True
+
+def parse_allconfigs(confdir):
+    accessFile = os.path.join(confdir, 'access')
+    confFile = os.path.join(confdir, 'config')
+
+    accessfd = open(accessFile)
+    conffd = open(confFile)
+
+    accessdict = parse_access(accessfd)
+    confdict, groupdict, userlist = parse_conf(conffd)
+
+    accessfd.close()
+    conffd.close()
+
+    # now some sanity checks:
+    for u in userlist:
+        if not valid_name(u):
+            print "Warning: User %s has invalid name" % u
+            userlist.remove(u)
+    todelete = set()
+    for g in groupdict:
+        if not valid_name(g):
+            print "Warning: Group %s has invalid name" % g
+            todelete.add(g)
+    for g in todelete: del groupdict[g]
+    for g in groupdict:
+        for u in groupdict[g]:
+            if not u in userlist:
+                print "Warning: Group %s refers to undefined user %s" %(g, u)
+                groupdict[g].remove(u)
+    todelete = []
+    for repo in accessdict:
+        if not valid_repopath(repo):
+            print 'Warning: repo path %s is invalid' % repo
+            todelete.append(repo)
+            continue
+        for ug in accessdict[repo]:
+            for accesstype in accessdict[repo][ug]:
+                for userorgroup in accessdict[repo][ug][accesstype]:
+                    print "debug_foo:" , repo, userorgroup, ug
+                    if ug == 'user' and not userorgroup in userlist:
+                        print "Warning: repo access to %s refers to undefined user %s" %(repo, userorgroup)
+                        accessdict[repo][ug][accesstype].remove(userorgroup)
+                    if ug == 'group' and not userorgroup in groupdict:
+                        print "Warning: repo access to %s refers to undefined group %s" %(repo, userorgroup)
+                        accessdict[repo][ug][accesstype].remove(userorgroup)
+    for t in todelete:
+        del accessdict[t]
+    retval = { "userlist": userlist, "groupdict": groupdict, "accessdict": accessdict, "confdict": confdict } 
+    print retval
+    return retval
+
+
+
+def replacefile(targetpath, newsuffix, backupsuffix):
+    b = targetpath + backupsuffix
+    n = targetpath + newsuffix
+    try:
+        os.remove(b)
+        os.link(targetpath, b)
+    except:
+        pass
+    try:
+        os.rename(n, targetpath)
+    except Exception as e:
+        os.remove(n)
+        raise e
+    try:
+        os.remove(b)
+    except:
+        pass
+
+def gen_hgrc(repo, confdict):
+    conf = confdict
+    accessdict =  conf['groupdict']
+    groupdict= conf['accessdict']
+    userlist =  conf['userlist']
+    globalhgrcprefix = conf['confdict']['globalhgrc']
+    print "gen_hgrc", repo, accessdict, groupdict, userlist, globalhgrcprefix
+    tmppath = repo +"/.hg/hgrc_tmp"
+    tmpfile = open(tmppath, "w")
+    if os.access(globalhgrcprefix, os.F_OK):
+        tmpfile.write(open(globalhgrcprefix).read())
+    if os.access(repo+".hg/hgrc_prefix", os.F_OK):
+        tmpfile.write(open(repo+".hg/hgrc_prefix").read())
+    readlist = []
+    writelist = []
+    for user in userlist:
+        if access.allow("read", user, repo, accessdict, groupdict):
+            readlist.append(user)
+        if access.allow("write", user, repo, accessdict, groupdict):
+            writelist.append(user)
+    tmpfile.write("[web]\n")
+    tmpfile.write("allow_read = ")
+    sep = ''
+    for user in readlist:
+        tmpfile.write(sep + user)
+        sep = ', '
+    tmpfile.write("\n")
+    tmpfile.write("allow_write = ")
+    sep = ''
+    for user in writelist:
+        tmpfile.write(sep + user)
+        sep = ', '
+    tmpfile.write("\n")
+    tmpfile.close()
+    replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
+
+def fetchkey(keyfile):
+    try:
+        key = subprocess.check_output(["ssh-keygen", "-i", "-f", keyfile])
+        return [key]
+    except subprocess.CalledProcessError as e:
+        pass
+    try:
+        return [ x.strip() for x in open(keyfile).readlines() ]
+    except Exception as e:
+        # raise e
+        return None
+
+def gen_authkeys(confdict):
+    userlist = confdict['userlist']
+    keydir = confdict['confdict']['sshkeydir']
+    authkeypath = confdict['confdict']['sshauthkeyspath']
+    print "gen_authkeys", userlist, keydir, authkeypath
+    tmppath = authkeypath +"_tmp"
+    tmpfile = open(tmppath, "w")
+    for user in userlist:
+        print "authkeys:", user
+        print "path: " , keydir + '/' + user
+        l = []
+        try:
+            l = os.listdir(keydir + '/' + user)
+        except OSError as e:
+            continue
+        for keyfile in l:
+            print "authkeys: file ", keyfile
+            p = keydir + '/' + user + '/' + keyfile
+            keylist = fetchkey(p)
+            if keylist == None:
+                continue
+            for key in keylist:
+                tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
+                tmpfile.write('"sshwrapper ' + user + ' " ' + key + '\n')
+    tmpfile.close()
+    replacefile(authkeypath, "_tmp", "_bak")
+
+def sanitize_path(path, root):
+    nroot = os.path.abspath(root).rstrip(os.sep)
+    apath = os.path.abspath(nroot + os.sep + path).rstrip(os.sep)
+    if not apath.startswith(nroot):
+        return ''
+    if apath == nroot:
+        return '/'
+    retpath = apath[len(nroot):]
+    if retpath[0] != os.sep:
+        retpath = os.sep + retpath
+    return retpath
+
+def validate_path(path):
+    if path == '' or path[0] != os.sep:
+        return False
+    if path.find('"') != -1 or path.find(os.sep + '.hg' + os.sep) != -1 \
+            or path.endswith(os.sep + '.hg') or path.find(os.sep + '..') != -1:
+        return False
+    return True
+
+def _patprefix(pat):
+    while pat != '' and pat[len(pat)-1] in '*' + os.sep:
+        pat = pat[:-1]
+    return pat
+    
+def _cmpbylen(a, b):
+    ppa = _patprefix(a)
+    ppb = _patprefix(b)
+    # print a, ppa, b, ppb
+    if ppa == ppb:
+        # print "same prefix:", a, b 
+        # if same prefix, shorter one first
+        return len(a)-len(b)
+    # if different prefix, longer one first
+    return len(ppb)-len(ppa)
+
+def _sort_repopats(accessdict):
+    repopats = list(accessdict.keys())
+    print repopats
+    repopats.sort(cmp=_cmpbylen)
+    print repopats
+    return repopats
+
+def _match_repopat_to_path(repopat, path):
+    prefix = _patprefix(repopat)
+    if repopat.endswith('**'):
+        return path.startswith(prefix)
+    if repopat.endswith('*'):
+        if not path.startswith(prefix):
+            return False
+        if os.sep in path[len(repopat)-1:]:
+            return False
+        return True
+    return repopat == path
+    
+
+def find_matching_repopat(accessdict, path):
+    repopatlist = _sort_repopats(accessdict)
+    print repopatlist
+    touse = None
+    for repopat in repopatlist:
+        print "debug_access: ", repopat
+        if _match_repopat_to_path(repopat, path):
+            print "success"
+            if touse == None:
+                touse = repopat
+        else:
+            print "no match"
+    return touse
+
+    
