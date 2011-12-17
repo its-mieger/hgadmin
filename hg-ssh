@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys, os, re
+import sys, os, re, subprocess
 
 def fail(message):
     sys.stderr.write("mercurial-server: %s\n" % message)
@@ -100,10 +100,7 @@ def create_impl_dummy(user, repo):
 # of course, you should rename create_impl_dummy to create_impl...
 
 def create_impl(user, repo):
-    import site
-    homedir = os.path.dirname(os.path.dirname(sys.argv[0]))
-    site.addsitedir(homedir+'/scripts/src')
-    import repocreate
-    repocreate.check_maybe_create_repo(user, repo)
-
-
+    retv = subprocess.call(["hgadmin", "mkrepo", user, repo])
+    if retv != 0:
+        fail("repo creation failed")
+    exit(0)
