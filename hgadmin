@@ -12,29 +12,28 @@ except AttributeError:
 BASEDIR='~/hgadmin'
 
 def usage(name):
-    print """usage: %s mkrepo USER PATH -- creates repository at PATH, if USER is allowed.
-                              PATH is relative to configured repo directory.
-       %s updateauth       -- updates authorization information in the managed 
-                              repositories, regenerates authorized_keys file etc
-                              
+    print """usage: 
+%s mkrepo USER PATH 
+  creates repository at PATH, if USER is
+  allowed. PATH is relative to configured repo directory.
+%s updateauth
+  updates authorization information in the managed repositories,
+  regenerates authorized_keys file etc
 """ % (name, name)
 
 config = None
 
-if __name__ == "__main__":
-    main()
-
 def main():
-    if len(sys.args) == 4 and sys.args[1] == "mkrepo":
-        config = parse_config(os.path.expanduser(BASEDIR))
-        gen_repo(sys.args[2], sys.args[3])
+    config = parse_config(os.path.expanduser(BASEDIR))
+    print repr(config)
+    if len(sys.argv) == 4 and sys.argv[1] == "mkrepo":
+        gen_repo(sys.argv[2], sys.argv[3])
         exit(0)
-    elif len(sys.args) == 2 and sys.args[1] == "updateauth":
-        config = parse_config(os.path.expanduser(BASEDIR))
+    elif len(sys.argv) == 2 and sys.argv[1] == "updateauth":
         update_auth()
         exit(0)
     else:
-        usage(sys.args[0])
+        usage(sys.argv[0])
         exit(1)
 
 def fail(message):
@@ -56,13 +55,14 @@ def gen_repo(user, unsanitized_repopath):
         fail("invalid path")
     if not user in config['userlist']:
         fail("unknown user")
-    if not allow("create", user, sanitized_path):
+    if not allow_access("create", user, sanitized_path):
         fail("access denied")
     dispatch.dispatch(request(['init', sanitized_path]))
     gen_hgrc(sanitized_path)
     x = open(sanitized_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
     x.close()
+    debug("now creating repo at " + repr(sanitized_path))
 
 def update_auth():
     repolist = list_all_repos()
@@ -83,10 +83,6 @@ def list_all_repos():
 def is_managed_repo(repo):
     root = config['confdict']['repopath']
     repopath = root + '/' + repopath
-    if not os.access(repopath, os.F_OK):
-        return False
-    if not os.access(repopath + '/.hg', os.F_OK):
-        return False
     if not os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK):
         return False
     return True
@@ -168,7 +164,7 @@ def parse_config(confdir):
     for g in groupdict:
         for u in groupdict[g]:
             if not u in userlist:
-                warn("Group %s refers to undefined user %s" %(g, u)))
+                warn("Group %s refers to undefined user %s" %(g, u))
                 groupdict[g].remove(u)
     todelete = []
     for repo in accessdict:
@@ -225,9 +221,9 @@ def gen_hgrc(repo):
     readlist = set()
     writelist = set()
     for user in userlist:
-        if access.allow("read", user, repo, accessdict, groupdict):
+        if allow_access("read", user, repo, accessdict, groupdict):
             readlist.add(user)
-        if access.allow("write", user, repo, accessdict, groupdict):
+        if allow_access("write", user, repo, accessdict, groupdict):
             writelist.add(user)
             readlist.add(user)
     tmpfile.write("[web]\n")
@@ -318,7 +314,6 @@ def sanitize_path(unsanitized_path):
         if '"' in pathpart:
             return (False, '')
 
-
     return (True, whole_new)
 
 def find_matching_repopat(path):
@@ -358,3 +353,21 @@ def find_matching_repopat(path):
     return touse
 
     
+def allow_access(accesstype, user, repopath):
+    pattern = find_matching_repopat(repopath)
+    access = config['accessdict'][pattern]
+    if 'user' in access:
+        tocheck = access['user']
+        if accesstype in tocheck and user in tocheck[accesstype]:
+            return True
+    if 'group' in access:
+        tocheck = access['group']
+        if accesstype in tocheck:
+            for group in tocheck[accesstype]:
+                if user in config['groupdict'][group]:
+                    return True
+    return False
+
+if __name__ == "__main__":
+    main()
+  

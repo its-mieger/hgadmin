@@ -1,7 +1,7 @@
 [paths]
-repopath = ~/repos
-htpasswdpath = ~/htpasswd
-sshauthkeyspath = ~/authorized_ssh_keys
+repopath = ~/hgadmin-sandbox/repos
+htpasswdpath = ~/hgadmin-sandbox/htpasswd
+sshauthkeyspath = ~/hgadmin-sandbox/authorized_ssh_keys
 globalhgrc = ~/hgadmin/hgrc
 sshkeydir = ~/hgadmin/keys
 
