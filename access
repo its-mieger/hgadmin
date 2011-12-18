@@ -21,6 +21,10 @@ user2 = Cw
 
 [/invalid2/*/reallyinvalid/**]
 
+["/testfoo"]
+
+["/testfoo2_]"]
+
 
 # access configuration file
 # 4 different statements:

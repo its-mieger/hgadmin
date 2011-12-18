@@ -1,7 +1,12 @@
 #! /usr/bin/env python
 
 import ConfigParser, string, sys, os, re
-from mercurial import ui, hg
+from mercurial import ui, hg, dispatch
+
+try:
+    request = dispatch.request
+except AttributeError:
+    request = list 
 
 # directory where hgadmin searches for its configuration
 BASEDIR='~/hgadmin'
@@ -46,26 +51,16 @@ def warn(msg):
     message(msg, "warning")
 
 def gen_repo(user, unsanitized_repopath):
-    path = unsanitized_repopath
-    debug("unsanitized path: " + repr(path))
-    path = sanitize_path(path)
-    debug("sanitized path: " + repr(path))
-    if validate_path(path):
-        debug("valid")
-    else:
-        fail("invalid path!")
+    path_ok, sanitized_path = sanitize_path(unsanitized_repopath)
+    if not path_ok:
+        fail("invalid path")
     if not user in config['userlist']:
         fail("unknown user")
-    if is_managed_path(repo):
-        fail("path already contains managed repository")
-    if not validate_path(targetrepo) or not is_managed_repo(targetrepo):
-        fail("invalid path")
-    allow_create = access.allow("create", user, repo)
-    if not allow_create:
+    if not allow("create", user, sanitized_path):
         fail("access denied")
-    dispatch.dispatch(request(['init', targetrepo]))
-    gen_hgrc(repo, conf)
-    x = open(repo+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
+    dispatch.dispatch(request(['init', sanitized_path]))
+    gen_hgrc(sanitized_path)
+    x = open(sanitized_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
     x.close()
 
@@ -196,8 +191,6 @@ def parse_config(confdir):
     retval = { "userlist": userlist, "groupdict": groupdict, "accessdict": accessdict, "confdict": confdict } 
     return retval
 
-
-
 def replacefile(targetpath, newsuffix, backupsuffix):
     b = targetpath + backupsuffix
     n = targetpath + newsuffix
@@ -288,27 +281,45 @@ def gen_authkeys():
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
 
-def sanitize_path(path, root):
-    nroot = os.path.abspath(root).rstrip(os.sep)
-    apath = os.path.abspath(nroot + os.sep + path).rstrip(os.sep)
-    if not apath.startswith(nroot):
-        return ''
-    if apath == nroot:
-        return '/'
-    retpath = apath[len(nroot):]
-    if retpath[0] != os.sep:
-        retpath = os.sep + retpath
-    return retpath
 
-def validate_path(path):
-    if path == '' or path[0] != os.sep:
-        return False
-    if path.find('"') != -1 or path.find(os.sep + '.hg' + os.sep) != -1 \
-            or path.endswith(os.sep + '.hg') or path.find(os.sep + '..') != -1:
-        return False
-    return True
 
-    
+def sanitize_path(unsanitized_path):
+    def split_path_rec(path):
+        if path == '/':
+            return []
+        p1, p2 = os.path.split(path)
+        return split_path_rec(p1) + [p2]
+        
+    if os.sep != '/':
+        fail("incompatible operating system!")
+
+    root = os.path.abspath(config['confdict']['reporoot']).rstrip('/')
+    apath = os.path.abspath(root + '/' + unsanitized_path).rstrip('/')
+    exist, tocreate = os.path.split(apath)
+    real_exist = os.path.realname(exist)
+    whole_new = real_exist + '/' + tocreate
+
+    if tocreate == '':
+        return (False, '')
+
+    if not os.path.isdir(real_exist):
+        return (False, '')
+
+    if os.path.lexists(whole_new):
+        return (False, '')
+
+    if not real_exist.startswith(root):
+        return (False, '')
+
+    spl = split_path_rec(whole_new)
+    for pathpart in spl:
+        if pathpar[0] == '.':
+            return (False, '')
+        if '"' in pathpart:
+            return (False, '')
+
+
+    return (True, whole_new)
 
 def find_matching_repopat(path):
     def _patprefix(pat):
