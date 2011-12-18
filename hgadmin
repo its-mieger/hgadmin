@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import ConfigParser, string, sys, os, re
+import ConfigParser, string, sys, os, re, subprocess
 from mercurial import ui, hg, dispatch
 
 try:
@@ -24,6 +24,7 @@ def usage(name):
 config = None
 
 def main():
+    global config
     config = parse_config(os.path.expanduser(BASEDIR))
     print repr(config)
     if len(sys.argv) == 4 and sys.argv[1] == "mkrepo":
@@ -69,23 +70,30 @@ def update_auth():
     for repo in repolist:
         gen_hgrc(repo)
     gen_authkeys()
-    gen_htaccess()
+    #gen_htaccess()
 
 def list_all_repos():
     repolist = []
-    for root, dirs, files in os.walk(config['confdict']['repopath'], topdown=True):
-        if is_managed_repo(root):
+    f = config['confdict']['repopath']
+    for root, dirs, files in os.walk(f, topdown=True):
+        debug("walking: " + repr(root))
+        if is_managed_repo(root, isAbs=True):
+            debug("found: " + repr(root))
             repolist.append(root)
         if '.hg' in dirs: 
             dirs.remove('.hg')
+    debug("all repos: " + repr(repolist))
     return repolist
 
-def is_managed_repo(repo):
-    root = config['confdict']['repopath']
-    repopath = root + '/' + repopath
-    if not os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK):
-        return False
-    return True
+def is_managed_repo(repo, isAbs=False):
+    if isAbs:
+        repopath = repo
+    else:
+        root = config['confdict']['repopath']
+        repopath = root + '/' + repo
+    x = os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
+    debug("is:managed_repopath" + repr(repopath) + " : " + repr(x))
+    return x
 
 
 def parse_config(confdir):
@@ -206,12 +214,11 @@ def replacefile(targetpath, newsuffix, backupsuffix):
         pass
 
 def gen_hgrc(repo):
-    config = confdict
     accessdict =  config['groupdict']
     groupdict= config['accessdict']
     userlist =  config['userlist']
     globalhgrcprefix = config['confdict']['globalhgrc']
-    debug("gen_hgrc" + repo + ' ' + accessdict +' '+ groupdict+' '+ userlist+' '+ globalhgrcprefix)
+    debug("gen_hgrc: " + repr(repo) + ' ' + repr(config))
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
     if os.access(globalhgrcprefix, os.R_OK):
@@ -220,10 +227,11 @@ def gen_hgrc(repo):
         tmpfile.write(open(repo+".hg/hgrc_prefix").read())
     readlist = set()
     writelist = set()
+    pattern = find_matching_repopat(repo)
     for user in userlist:
-        if allow_access("read", user, repo, accessdict, groupdict):
+        if allow_access("read", user, pattern):
             readlist.add(user)
-        if allow_access("write", user, repo, accessdict, groupdict):
+        if allow_access("write", user, pattern):
             writelist.add(user)
             readlist.add(user)
     tmpfile.write("[web]\n")
@@ -343,6 +351,7 @@ def find_matching_repopat(path):
 
     repopatlist = list(config['accessdict'].keys())
     repopatlist.sort(cmp=_cmpbylen)
+    debug("repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
     touse = None
     for repopat in repopatlist:
         if _match_repopat_to_path(repopat, path):
