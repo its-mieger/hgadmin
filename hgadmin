@@ -23,7 +23,7 @@ def usage(name):
   prints TRUE if access ACCESSTYPE on PATH is allowed to USER, else FALSE
 %s getpattern PATH
   prints the pattern from the configuration that matches PATH
-""" % (name, name)
+""" % (name, name, name, name)
 
 config = None
 
@@ -41,7 +41,11 @@ def main():
         print allow_access(sys.argv[2], sys.argv[3], sys.argv[4])
         exit(0)  
     elif len(sys.argv) == 3 and sys.argv[1] == "getpattern":
-        print repr(find_matching_repopat(sys.argv[2]))
+        flag, p = sanitize_path(sys.argv[2])
+        if flag:
+            print repr(find_matching_repopat(p))
+        else:
+            print False
         exit(0)  
     else:
         usage(sys.argv[0])
@@ -361,11 +365,11 @@ def find_matching_repopat(path):
 
     repopatlist = list(config['accessdict'].keys())
     repopatlist.sort(cmp=_cmpbylen)
-    debug("repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
+    debug("find_matching_repopat: repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
     touse = None
     for repopat in repopatlist:
         extended_repopat = config['confdict']['repopath'] + repopat
-        debug("repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
+        debug("find_matching_repopat: repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
         if _match_repopat_to_path(extended_repopat, path):
             if touse == None:
                 touse = repopat
