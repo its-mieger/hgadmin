@@ -10,6 +10,7 @@ user3 = rwC
 @group1 = r
 @group2 = wr
 @nonexistentgroup = rwC
+user4 = w
 
 [/sub1/*]
 user2 = Cw
