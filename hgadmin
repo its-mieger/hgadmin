@@ -19,6 +19,10 @@ def usage(name):
 %s updateauth
   updates authorization information in the managed repositories,
   regenerates authorized_keys file etc
+%s accesscheck ACCESSTYPE USER PATH
+  prints TRUE if access ACCESSTYPE on PATH is allowed to USER, else FALSE
+%s getpattern PATH
+  prints the pattern from the configuration that matches PATH
 """ % (name, name)
 
 config = None
@@ -33,6 +37,12 @@ def main():
     elif len(sys.argv) == 2 and sys.argv[1] == "updateauth":
         update_auth()
         exit(0)
+    elif len(sys.argv) == 5 and sys.argv[1] == "accesscheck":
+        print allow_access(sys.argv[2], sys.argv[3], sys.argv[4])
+        exit(0)  
+    elif len(sys.argv) == 3 and sys.argv[1] == "getpattern":
+        print repr(find_matching_repopat(sys.argv[2]))
+        exit(0)  
     else:
         usage(sys.argv[0])
         exit(1)
