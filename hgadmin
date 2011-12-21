@@ -145,8 +145,18 @@ def parse_config(confdir):
     conffd.close()
     confdict = {}
     groupdict = {}
-    for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath', 'globalhgrc', 'sshkeydir']:
-        confdict[option] = os.path.expanduser(p.get('paths', option))
+    # set some defaults
+    confdict['globalhgrc'] = os.path.join(confdir, 'hgrc')
+    confdict['sshkeydir'] = os.path.join(confdir, 'keys')
+    confdict['hg-ssh'] = os.path.join(confdir, 'hg-ssh')
+    for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath']:
+        if p.has_option('paths', option):
+            confdict[option] = os.path.expanduser(p.get('paths', option))
+        else:
+            fail("expected option %s in section paths"%option)
+    for option in ['hg-ssh', 'globalhgrc', 'sshkeydir']:
+        if p.has_option('paths', option):
+            confdict[option] = os.path.expanduser(p.get('paths', option))
     for group in p.options('groups'):
         groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]
     userlist = [x.strip() for x in p.get('users', 'users').split(',')]
@@ -271,7 +281,7 @@ def gen_hgrc(repo):
 
 def fetchkey(keyfile):
     try:
-        key = subprocess.check_output(["ssh-keygen", "-i", "-f", keyfile])
+        key = subprocess.check_output(["ssh-keygen", "-i", "-f", keyfile], stderr=subprocess.STDOUT)
         return [key]
     except subprocess.CalledProcessError as e:
         pass
@@ -300,7 +310,8 @@ def gen_authkeys():
                 continue
             for key in keylist:
                 tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
-                tmpfile.write('"sshwrapper ' + user + ' " ' + key + '\n')
+                tmpfile.write('"' +config['confdict']['hg-ssh'] + ' '+ user + ' " ' + key + '\n')
+               #tmpfile.write('"sshwrapper ' + user + ' " ' + key + '\n')
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
 

@@ -2,8 +2,9 @@
 repopath = ~/hgadmin-sandbox/repos
 htpasswdpath = ~/hgadmin-sandbox/htpasswd
 sshauthkeyspath = ~/hgadmin-sandbox/authorized_ssh_keys
-globalhgrc = ~/hgadmin/hgrc
-sshkeydir = ~/hgadmin/keys
+# globalhgrc = ~/hgadmin/hgrc
+# sshkeydir = ~/hgadmin/keys
+# hg-ssh = ~/hg-ssh
 
 [groups]
 group1 = user1, user2

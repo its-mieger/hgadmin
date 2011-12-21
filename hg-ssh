@@ -89,9 +89,6 @@ def main():
     else:
         fail("invalid command")
 
-if __name__ == "__main__":
-    main()
-
 def create_impl_dummy(user, repo):
     fail("repository creation deactivated")
 
@@ -104,3 +101,6 @@ def create_impl(user, repo):
     if retv != 0:
         fail("repo creation failed")
     exit(0)
+
+if __name__ == "__main__":
+    main()
