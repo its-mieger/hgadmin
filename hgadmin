@@ -73,7 +73,7 @@ def gen_repo(user, unsanitized_repopath):
     path_ok, sanitized_path = sanitize_path(unsanitized_repopath)
     if not path_ok:
         fail("invalid path")
-    if not user in config['userlist']:
+    if not user in config.userlist:
         fail("unknown user")
     if not allow_access("create", user, sanitized_path):
         fail("access denied")
@@ -93,7 +93,7 @@ def update_auth():
 
 def list_all_repos():
     repolist = []
-    f = config['confdict']['repopath']
+    f = config.paths['repopath']
     for root, dirs, files in os.walk(f, topdown=True):
         debug("walking: " + repr(root))
         if is_managed_repo(root, isAbs=True):
@@ -108,14 +108,28 @@ def is_managed_repo(repo, isAbs=False):
     if isAbs:
         repopath = repo
     else:
-        root = config['confdict']['repopath']
+        root = config.paths['repopath']
         repopath = root + '/' + repo
     x = os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
     debug("is:managed_repopath" + repr(repopath) + " : " + repr(x))
     return x
 
+class confobj:
+    def __init__(self):
+        self.userlist = None
+        self.groupdict = None
+        self.accessdict = None
+        self.paths = None
+    def __str__(self):
+        return "config:\n" \
+            + "  userlist: "   + repr(self.userlist) + "\n" \
+            + "  groupdict: "  + repr(self.groupdict) + "\n" \
+            + "  accessdict: " + repr(self.accessdict) + "\n" \
+            + "  paths: "      + repr(self.paths) + "\n" 
+
 
 def parse_config(confdir):
+
     def valid_name(name):
         validchars = string.letters + string.digits + '_-+&'
         for c in name:
@@ -143,20 +157,18 @@ def parse_config(confdir):
     p = ConfigParser.RawConfigParser()
     p.readfp(conffd)
     conffd.close()
-    confdict = {}
+    paths = {}
     groupdict = {}
     # set some defaults
-    confdict['globalhgrc'] = os.path.join(confdir, 'hgrc')
-    confdict['sshkeydir'] = os.path.join(confdir, 'keys')
-    confdict['hg-ssh'] = os.path.join(confdir, 'hg-ssh')
-    for option in ['repopath', 'htpasswdpath', 'sshauthkeyspath']:
-        if p.has_option('paths', option):
-            confdict[option] = os.path.expanduser(p.get('paths', option))
-        else:
-            fail("expected option %s in section paths"%option)
+    paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
+    paths['sshkeydir']       = os.path.join(confdir, 'keys')
+    paths['hg-ssh']          = os.path.join(confdir, 'hg-ssh')
+    paths['repopath']        = os.path.expanduser('~/repos')
+    paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
+    paths['sshauthkeyspath'] = os.path.expanduser('~/.ssh/authorized_keys')
     for option in ['hg-ssh', 'globalhgrc', 'sshkeydir']:
         if p.has_option('paths', option):
-            confdict[option] = os.path.expanduser(p.get('paths', option))
+            paths[option] = os.path.expanduser(p.get('paths', option))
     for group in p.options('groups'):
         groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]
     userlist = [x.strip() for x in p.get('users', 'users').split(',')]
@@ -221,7 +233,11 @@ def parse_config(confdir):
                         accessdict[repo][ug][accesstype].remove(userorgroup)
     for t in todelete:
         del accessdict[t]
-    retval = { "userlist": userlist, "groupdict": groupdict, "accessdict": accessdict, "confdict": confdict } 
+    retval = confobj()
+    retval.userlist = userlist
+    retval.groupdict = groupdict
+    retval.accessdict = accessdict
+    retval.paths = paths
     return retval
 
 def replacefile(targetpath, newsuffix, backupsuffix):
@@ -243,10 +259,7 @@ def replacefile(targetpath, newsuffix, backupsuffix):
         pass
 
 def gen_hgrc(repo):
-    accessdict =  config['groupdict']
-    groupdict= config['accessdict']
-    userlist =  config['userlist']
-    globalhgrcprefix = config['confdict']['globalhgrc']
+    globalhgrcprefix = config.paths['globalhgrc']
     debug("gen_hgrc: " + repr(repo) + ' ' + repr(config))
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
@@ -257,7 +270,7 @@ def gen_hgrc(repo):
     readlist = set()
     writelist = set()
     pattern = find_matching_repopat(repo)
-    for user in userlist:
+    for user in config.userlist:
         if allow_access_bypattern("read", user, pattern):
             readlist.add(user)
         if allow_access_bypattern("write", user, pattern):
@@ -292,9 +305,9 @@ def fetchkey(keyfile):
         return None
 
 def gen_authkeys():
-    userlist = config['userlist']
-    keydir = config['confdict']['sshkeydir']
-    authkeypath = config['confdict']['sshauthkeyspath']
+    userlist = config.userlist
+    keydir = config.paths['sshkeydir']
+    authkeypath = config.paths['sshauthkeyspath']
     tmppath = authkeypath +"_tmp"
     tmpfile = open(tmppath, "w")
     for user in userlist:
@@ -310,7 +323,7 @@ def gen_authkeys():
                 continue
             for key in keylist:
                 tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
-                tmpfile.write('"' +config['confdict']['hg-ssh'] + ' '+ user + ' " ' + key + '\n')
+                tmpfile.write('"' +config.paths['hg-ssh'] + ' '+ user + ' " ' + key + '\n')
                #tmpfile.write('"sshwrapper ' + user + ' " ' + key + '\n')
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
@@ -327,7 +340,7 @@ def sanitize_path(unsanitized_path):
     if os.sep != '/':
         fail("incompatible operating system!")
 
-    root = os.path.abspath(config['confdict']['repopath']).rstrip('/')
+    root = os.path.abspath(config.paths['repopath']).rstrip('/')
     apath = os.path.abspath(root + '/' + unsanitized_path).rstrip('/')
     exist, tocreate = os.path.split(apath)
     real_exist = os.path.realpath(exist)
@@ -384,12 +397,12 @@ def find_matching_repopat(path):
             return True
         return repopat == path
 
-    repopatlist = list(config['accessdict'].keys())
+    repopatlist = list(config.accessdict.keys())
     repopatlist.sort(cmp=_cmpbylen)
     debug("find_matching_repopat: repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
     touse = None
     for repopat in repopatlist:
-        extended_repopat = config['confdict']['repopath'] + repopat
+        extended_repopat = config.paths['repopath'] + repopat
         debug("find_matching_repopat: repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
         if _match_repopat_to_path(extended_repopat, path):
             if touse == None:
@@ -410,9 +423,9 @@ def allow_access_bypattern(accesstype, user, pattern):
     debug("allow_acces_bypattern  pattern: " + repr(pattern) + " user: " + repr(user) + " accesstype: " + repr(accesstype))
     if pattern == None:
         return False
-    if not pattern in config['accessdict']:
+    if not pattern in config.accessdict:
         return False
-    access = config['accessdict'][pattern]
+    access = config.accessdict[pattern]
     if 'user' in access:
         tocheck = access['user']
         if accesstype in tocheck and user in tocheck[accesstype]:
@@ -421,7 +434,7 @@ def allow_access_bypattern(accesstype, user, pattern):
         tocheck = access['group']
         if accesstype in tocheck:
             for group in tocheck[accesstype]:
-                if user in config['groupdict'][group]:
+                if user in config.groupdict[group]:
                     return True
     return False
 

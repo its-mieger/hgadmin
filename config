@@ -1,10 +1,16 @@
 [paths]
+# you can configure paths here. 
+# the defaults are:
+#   repopath = ~/repos
+#   htpasswdpath = ~/repos/htpasswd
+#   sshauthkeyspath = ~/.ssh/authorized_keys
+#   globalhgrc = ~/hgadmin/hgrc
+#   sshkeydir = ~/hgadmin/keys
+#   hg-ssh = ~/hgadmin/hg-ssh
+  
 repopath = ~/hgadmin-sandbox/repos
 htpasswdpath = ~/hgadmin-sandbox/htpasswd
 sshauthkeyspath = ~/hgadmin-sandbox/authorized_ssh_keys
-# globalhgrc = ~/hgadmin/hgrc
-# sshkeydir = ~/hgadmin/keys
-# hg-ssh = ~/hg-ssh
 
 [groups]
 group1 = user1, user2
