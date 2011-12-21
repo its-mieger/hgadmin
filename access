@@ -1,4 +1,4 @@
-[/]
+[/**]
 
 user1 = r
 user2 = r w
@@ -16,6 +16,8 @@ user2 = Cw
 
 
 [/sub2/**]
+
+user1 = rw
 
 [/sub2/*]
 

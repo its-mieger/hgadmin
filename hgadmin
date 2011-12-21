@@ -229,9 +229,9 @@ def gen_hgrc(repo):
     writelist = set()
     pattern = find_matching_repopat(repo)
     for user in userlist:
-        if allow_access("read", user, pattern):
+        if allow_access_bypattern("read", user, pattern):
             readlist.add(user)
-        if allow_access("write", user, pattern):
+        if allow_access_bypattern("write", user, pattern):
             writelist.add(user)
             readlist.add(user)
     tmpfile.write("[web]\n")
@@ -354,18 +354,28 @@ def find_matching_repopat(path):
     debug("repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
     touse = None
     for repopat in repopatlist:
-        if _match_repopat_to_path(repopat, path):
+        extended_repopat = config['confdict']['repopath'] + repopat
+        debug("repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
+        if _match_repopat_to_path(extended_repopat, path):
             if touse == None:
                 touse = repopat
-        else:
-            pass
+                break
     return touse
 
     
 def allow_access(accesstype, user, repopath):
     pattern = find_matching_repopat(repopath)
+    debug("allow_acces path: " + repr(repopath) + " user: " + repr(user) + " accesstype: " + repr(accesstype))
     if pattern == None:
         return False;
+    return allow_access_bypattern(accesstype, user, pattern)
+
+def allow_access_bypattern(accesstype, user, pattern):
+    debug("allow_acces_bypattern  pattern: " + repr(pattern) + " user: " + repr(user) + " accesstype: " + repr(accesstype))
+    if pattern == None:
+        return False
+    if not pattern in config['accessdict']:
+        return False
     access = config['accessdict'][pattern]
     if 'user' in access:
         tocheck = access['user']
