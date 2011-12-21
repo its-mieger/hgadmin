@@ -3,6 +3,7 @@
 user1 = r
 user2 = r w
 nonexistentuser = Cw
+user3 = rwC
 
 [/repo1]
 
@@ -12,6 +13,7 @@ nonexistentuser = Cw
 
 [/sub1/*]
 user2 = Cw
+
 
 [/sub2/**]
 

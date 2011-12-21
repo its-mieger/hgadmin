@@ -37,12 +37,12 @@ def main():
         usage(sys.argv[0])
         exit(1)
 
-def fail(message):
-    message(message, "failure")
+def fail(msg):
+    message(msg, "failure")
     exit(1)
 
-def message(message, messagelevel="info"):
-    print messagelevel, ":", message
+def message(msg, messagelevel="info"):
+    print messagelevel, ":", msg
 
 def debug(msg):
     message(msg, "debug")
@@ -297,10 +297,10 @@ def sanitize_path(unsanitized_path):
     if os.sep != '/':
         fail("incompatible operating system!")
 
-    root = os.path.abspath(config['confdict']['reporoot']).rstrip('/')
+    root = os.path.abspath(config['confdict']['repopath']).rstrip('/')
     apath = os.path.abspath(root + '/' + unsanitized_path).rstrip('/')
     exist, tocreate = os.path.split(apath)
-    real_exist = os.path.realname(exist)
+    real_exist = os.path.realpath(exist)
     whole_new = real_exist + '/' + tocreate
 
     if tocreate == '':
@@ -317,7 +317,7 @@ def sanitize_path(unsanitized_path):
 
     spl = split_path_rec(whole_new)
     for pathpart in spl:
-        if pathpar[0] == '.':
+        if pathpart[0] == '.':
             return (False, '')
         if '"' in pathpart:
             return (False, '')
@@ -364,6 +364,8 @@ def find_matching_repopat(path):
     
 def allow_access(accesstype, user, repopath):
     pattern = find_matching_repopat(repopath)
+    if pattern == None:
+        return False;
     access = config['accessdict'][pattern]
     if 'user' in access:
         tocheck = access['user']
