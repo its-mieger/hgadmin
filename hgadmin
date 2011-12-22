@@ -114,7 +114,7 @@ def is_managed_repo(repo, isAbs=False):
     debug("is:managed_repopath" + repr(repopath) + " : " + repr(x))
     return x
 
-class confobj:
+class confobj: # object to save configuration settings
     def __init__(self):
         self.userlist = None
         self.groupdict = None
@@ -166,7 +166,7 @@ def parse_config(confdir):
     paths['repopath']        = os.path.expanduser('~/repos')
     paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
     paths['sshauthkeyspath'] = os.path.expanduser('~/.ssh/authorized_keys')
-    for option in ['hg-ssh', 'globalhgrc', 'sshkeydir']:
+    for option in paths:
         if p.has_option('paths', option):
             paths[option] = os.path.expanduser(p.get('paths', option))
     for group in p.options('groups'):

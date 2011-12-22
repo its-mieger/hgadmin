@@ -2,22 +2,24 @@
 
 import sys, os, re, subprocess
 
+def main():
+    user = extractuser()
+    cmd, repo = parse_cmd()
+    if cmd == "serve":
+        serve_impl(user,repo)
+    elif cmd == "create":
+        create_impl(user,repo)
+    else:
+        fail("invalid command")
+
+def extractuser():
+    if len(sys.argv) != 2:
+        fail("invalid command line")
+    return sys.argv[1]
+
 def fail(message):
     sys.stderr.write("mercurial-server: %s\n" % message)
     sys.exit(-1)
-
-def extractuser():
-    return sys.argv[1]
-
-def sanitize_path(path):
-    path = path.strip().strip('"')
-    path = os.path.abspath(os.path.expanduser('~'), path)
-    if len(path) == 0 or path.find('"') != -1 or path.find('/.') != -1 or os.sep != '/':
-        fail("invalid repository path")
-    return path
-
-def is_managed_path(path):
-    return os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
 
 def parse_cmd():
     origcmd = os.environ.get('SSH_ORIGINAL_COMMAND', None)
@@ -38,69 +40,63 @@ def parse_cmd():
         repo = match_init.group(1)
     else:
         fail("internal error")
-    repo = sanitize_path(repo)
+
+    # now sanitize the path
+    repo = repo.strip().strip('"')
+    repo = os.path.abspath(os.path.expanduser('~'), repo)
+    if len(repo) == 0 or repo.find('"') != -1 or repo.find('/.') != -1 or os.sep != '/':
+        fail("invalid repository path")
     return (cmd, repo)
-    
-def allow_access(repo, user, access):
-    repo = hg.repository(ui.ui(), repo)
-    denyread   = repo.ui.configlist("web", "deny_read")  
-    allowread  = repo.ui.configlist("web", "allow_read") 
-    denywrite  = repo.ui.configlist("web", "deny_write") 
-    allowwrite = repo.ui.configlist("web", "allow_write")
-    if access == 'read':
-        if denyread == ['*'] or user in denyread:
-            return False
-        if allowread == ['*'] or user in allowread:
-            return True
-        return False
-    elif access == 'write':
-        if denywrite == ['*'] or user in denywrite:
-            return False
-        if allowwrite == ['*'] or user in allowwrite:
-            return True
-        return False
-    else:
-        return False
 
 def serve_impl(user, repo):
     if not is_managed_path(repo):
         fail("path contains no managed repository")
     from mercurial import demandimport; demandimport.enable()
-    from mercurial import dispatch, hg, ui
+    from mercurial import dispatch
     try:
         request = dispatch.request
     except AttributeError:
         request = list
-    if not allow_access(repo, user, "read"):
+    readaccess, writeaccess = allow_access(repo, user)
+    if not readaccess:
         fail("insufficient privilege")
     rqlist = ['-R', targetrepo, 'serve', '--stdio']
-    if not allow_access(repo, user, "write"):
+    if not writeaccess:
         rqlist += ['--config', 'hooks.prechangegroup=false', '--config', 'hooks.pretxnchangegroup=false']
     dispatch.dispatch(request(rqlist))
-
-
-def main():
-    user = extractuser()
-    cmd, repo = parse_cmd()
-    if cmd == "serve":
-        serve_impl(user,repo)
-    elif cmd == "create":
-        create_impl(user,repo)
-    else:
-        fail("invalid command")
-
-def create_impl_dummy(user, repo):
-    fail("repository creation deactivated")
-
-# you can omit the rest if you want to use this script standalone
-# and do not need users' ability to create repos
-# of course, you should rename create_impl_dummy to create_impl...
 
 def create_impl(user, repo):
     retv = subprocess.call(["hgadmin", "mkrepo", user, repo])
     if retv != 0:
         fail("repo creation failed")
     exit(0)
+
+# # you can replace the above implementation of create_impl with this
+# # one if you want to use this script standalone and do not need
+# # users' ability to create repos.
+# def create_impl(user, repo):
+#     fail("repository creation deactivated")
+
+def is_managed_path(path):
+    # we could check whether the path is relative to the directory with managed repositories.
+    # however, that would require finding and parsing the configuration file and
+    # messing around with real paths (after eliminating symlinks etc.)
+    # this check should be entirely sufficient.
+    return os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
+    
+def allow_access(repo, user):
+    try:
+        from mercurial import hg, ui
+        repo = hg.repository(ui.ui(), repo)
+        denyread   = repo.ui.configlist("web", "deny_read")  
+        allowread  = repo.ui.configlist("web", "allow_read") 
+        denywrite  = repo.ui.configlist("web", "deny_write") 
+        allowwrite = repo.ui.configlist("web", "allow_write")
+    except Exception:
+        fail("could not access repository configuration")
+    readaccess  = (allowread  == ['*'] or user in allowread ) and not (denyread  == ['*'] or user in denyread )
+    writeaccess = (allowwrite == ['*'] or user in allowwrite) and not (denywrite == ['*'] or user in denywrite)
+    return (readaccess, writeaccess)
 
 if __name__ == "__main__":
     main()
