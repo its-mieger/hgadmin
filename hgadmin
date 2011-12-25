@@ -63,8 +63,8 @@ def message(msg, messagelevel="info"):
     print messagelevel, ":", msg
 
 def debug(msg):
-    #message(msg, "debug")
-    pass
+    message(msg, "debug")
+    #pass
 
 def warn(msg):
     message(msg, "warning")
@@ -120,7 +120,7 @@ class confobj: # object to save configuration settings
         self.groupdict = None
         self.accessdict = None
         self.paths = None
-    def __str__(self):
+    def __repr__(self):
         return "config:\n" \
             + "  userlist: "   + repr(self.userlist) + "\n" \
             + "  groupdict: "  + repr(self.groupdict) + "\n" \
@@ -137,18 +137,14 @@ def parse_config(confdir):
                 return False
         return True
     
-    def valid_repopath(repo):
-        if not repo.startswith(os.sep):
+    def valid_repopattern(pattern):
+        if pattern.endswith('**'):
+            pattern = pattern[:-2]
+        elif pattern.endswith('*'):
+            pattern = pattern[:-1]
+        if pattern.startswith('.') or pattern.find('/.') != -1:
             return False
-        if repo.endswith('**'):
-            repo = repo[:-2]
-        elif repo.endswith('*'):
-            repo = repo[:-1]
-        if repo.find('*') != -1:
-            return False
-        if repo.find(os.sep + '.hg' + os.sep) != -1:
-            return False
-        if repo.endswith(os.sep + '.hg'):
+        if pattern.find('*') != -1:
             return False
         return True
   
@@ -217,8 +213,8 @@ def parse_config(confdir):
                 groupdict[g].remove(u)
     todelete = []
     for repo in accessdict:
-        if not valid_repopath(repo):
-            warn('repo path %s is invalid' % repo)
+        if not valid_repopattern(repo):
+            warn('repo pattern %s is invalid' % repo)
             todelete.append(repo)
             continue
         for ug in accessdict[repo]:
@@ -294,8 +290,10 @@ def gen_hgrc(repo):
 
 def fetchkey(keyfile):
     try:
-        key = subprocess.check_output(["ssh-keygen", "-i", "-f", keyfile], stderr=subprocess.STDOUT)
-        return [key]
+        x = subprocess.Popen(["ssh-keygen", "-i", "-f", keyfile], stderr=subprocess.STDOUT)
+        key = x.communicate()[0]
+        if x.returncode == 0:
+            return [key]
     except subprocess.CalledProcessError as e:
         pass
     try:

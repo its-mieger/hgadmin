@@ -2,6 +2,18 @@
 
 import sys, os, re, subprocess
 
+
+######################################################################
+# Configurable Variables
+######################################################################
+debug = True
+allowcreate = True
+repodir = '~/hgadmin-sandbox/repos/'
+######################################################################
+# Code starts here, You should not need to modify anything below this
+# comment.
+######################################################################
+
 def main():
     user = extractuser()
     cmd, repo = parse_cmd()
@@ -43,8 +55,9 @@ def parse_cmd():
 
     # now sanitize the path
     repo = repo.strip().strip('"')
-    repo = os.path.abspath(os.path.expanduser('~'), repo)
-    if len(repo) == 0 or repo.find('"') != -1 or repo.find('/.') != -1 or os.sep != '/':
+    repo = os.path.abspath(os.path.join(os.path.expanduser(repodir), repo))
+    if len(repo) == 0 or repo.find('"') != -1 \
+            or repo.find('/.') != -1 or os.sep != '/':
         fail("invalid repository path")
     return (cmd, repo)
 
@@ -60,28 +73,31 @@ def serve_impl(user, repo):
     readaccess, writeaccess = allow_access(repo, user)
     if not readaccess:
         fail("insufficient privilege")
-    rqlist = ['-R', targetrepo, 'serve', '--stdio']
+    rqlist = ['-R', repo, 'serve', '--stdio']
     if not writeaccess:
-        rqlist += ['--config', 'hooks.prechangegroup=false', '--config', 'hooks.pretxnchangegroup=false']
+        rqlist += ['--config', 'hooks.prechangegroup=false', \
+                       '--config', 'hooks.pretxnchangegroup=false']
+    if debug:
+        fail("success: " + repr(rqlist))
     dispatch.dispatch(request(rqlist))
 
 def create_impl(user, repo):
+    if debug:
+        fail("success: " + repr(["hgadmin", "mkrepo", user, repo]))
+    if not allowcreate:
+        fail("repository creation deactivated")
     retv = subprocess.call(["hgadmin", "mkrepo", user, repo])
     if retv != 0:
         fail("repo creation failed")
     exit(0)
 
-# # you can replace the above implementation of create_impl with this
-# # one if you want to use this script standalone and do not need
-# # users' ability to create repos.
-# def create_impl(user, repo):
-#     fail("repository creation deactivated")
 
 def is_managed_path(path):
-    # we could check whether the path is relative to the directory with managed repositories.
-    # however, that would require finding and parsing the configuration file and
-    # messing around with real paths (after eliminating symlinks etc.)
-    # this check should be entirely sufficient.
+    # we could check whether the path is relative to the directory
+    # with managed repositories.  however, that would require finding
+    # and parsing the configuration file and messing around with real
+    # paths (after eliminating symlinks etc.)  this check should be
+    # entirely sufficient.
     return os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
     
 def allow_access(repo, user):
@@ -94,8 +110,10 @@ def allow_access(repo, user):
         allowwrite = repo.ui.configlist("web", "allow_write")
     except Exception:
         fail("could not access repository configuration")
-    readaccess  = (allowread  == ['*'] or user in allowread ) and not (denyread  == ['*'] or user in denyread )
-    writeaccess = (allowwrite == ['*'] or user in allowwrite) and not (denywrite == ['*'] or user in denywrite)
+    readaccess  = ((allowread  == ['*'] or user in allowread ) \
+           and not (denyread   == ['*'] or user in denyread  ))
+    writeaccess = ((allowwrite == ['*'] or user in allowwrite) \
+           and not (denywrite  == ['*'] or user in denywrite ))
     return (readaccess, writeaccess)
 
 if __name__ == "__main__":
