@@ -321,8 +321,7 @@ def gen_authkeys():
                 continue
             for key in keylist:
                 tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
-                tmpfile.write('"' +config.paths['hg-ssh'] + ' '+ user + ' " ' + key + '\n')
-               #tmpfile.write('"sshwrapper ' + user + ' " ' + key + '\n')
+                tmpfile.write('"' +config.paths['hg-ssh'] +' ' + config.paths['repopath'] + ' '+ user + ' " ' + key + '\n')
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
 
