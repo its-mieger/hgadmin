@@ -8,15 +8,14 @@ import sys, os, re, subprocess
 ######################################################################
 debug = True
 allowcreate = True
-repodir = '~/hgadmin-sandbox/repos/'
 ######################################################################
 # Code starts here, You should not need to modify anything below this
 # comment.
 ######################################################################
 
 def main():
-    user = extractuser()
-    cmd, repo = parse_cmd()
+    repodir, user = extractargs()
+    cmd, repo = parse_cmd(repodir)
     if cmd == "serve":
         serve_impl(user,repo)
     elif cmd == "create":
@@ -24,16 +23,16 @@ def main():
     else:
         fail("invalid command")
 
-def extractuser():
-    if len(sys.argv) != 2:
+def extractargs():
+    if len(sys.argv) != 3:
         fail("invalid command line")
-    return sys.argv[1]
+    return (os.path.expanduser(sys.argv[1]), sys.argv[2])
 
 def fail(message):
     sys.stderr.write("mercurial-server: %s\n" % message)
     sys.exit(-1)
 
-def parse_cmd():
+def parse_cmd(repodir):
     origcmd = os.environ.get('SSH_ORIGINAL_COMMAND', None)
     if origcmd == None:
         fail("started directly")
@@ -55,7 +54,7 @@ def parse_cmd():
 
     # now sanitize the path
     repo = repo.strip().strip('"')
-    repo = os.path.abspath(os.path.join(os.path.expanduser(repodir), repo))
+    repo = os.path.abspath(repodir + '/' + repo))
     if len(repo) == 0 or repo.find('"') != -1 \
             or repo.find('/.') != -1 or os.sep != '/':
         fail("invalid repository path")
