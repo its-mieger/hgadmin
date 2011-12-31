@@ -156,8 +156,6 @@ def parse_config(confdir):
     paths = {}
     groupdict = {}
     # set some defaults
-    paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
-    paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['hg-ssh']          = os.path.join(confdir, 'hg-ssh')
     paths['repopath']        = os.path.expanduser('~/repos')
     paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
@@ -165,6 +163,8 @@ def parse_config(confdir):
     for option in paths:
         if p.has_option('paths', option):
             paths[option] = os.path.expanduser(p.get('paths', option))
+    paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
+    paths['sshkeydir']       = os.path.join(confdir, 'keys')
     for group in p.options('groups'):
         groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]
     userlist = [x.strip() for x in p.get('users', 'users').split(',')]

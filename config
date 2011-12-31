@@ -4,8 +4,6 @@
 #   repopath = ~/repos
 #   htpasswdpath = ~/repos/htpasswd
 #   sshauthkeyspath = ~/.ssh/authorized_keys
-#   globalhgrc = ~/hgadmin/hgrc
-#   sshkeydir = ~/hgadmin/keys
 #   hg-ssh = ~/hgadmin/hg-ssh
   
 repopath = ~/hgadmin-sandbox/repos
