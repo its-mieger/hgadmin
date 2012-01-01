@@ -93,10 +93,17 @@ There are three sections in the 'config'-file, named 'paths', 'groups' and 'user
 
 The section 'paths' has six possible settings:
 
-  - 'repopath' -- 
-  - 'htpasswdpath' -- 
-  - 'sshauthkeyspath' -- 
-  - 'hg-ssh' -- 
+  - 'repopath' -- directory path that contains the managed repositories
+  - 'htpasswdpath' -- path to the htpasswdfile, if present
+  - 'sshauthkeyspath' -- path to the authorized_keys file
+  - 'hg-ssh' -- path to the hg-ssh script
+
+The section 'users' has exactly one setting, named 'users'.
+Its value is a comma separated list of the users.
+
+The section 'groups' contains the groups. A groupname is encoded in
+the name of a setting; the users belonging to the group end up in the
+value of the setting.
 
 
 Installation
