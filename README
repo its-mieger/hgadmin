@@ -1,0 +1,110 @@
+Overview
+
+hgadmin is intended to help with managing access to mercurial
+repositories. Its intended scenario is:
+
+ - a set of users (optionally organized in groups)
+ - a set of repositories (all residing below one directory)
+ - a user may be allowed to read or write to some repositories
+ - a user may be allowed to create new repositories in some subdirectory
+ - read/write access is possible via ssh and https
+ - creation is possible only via ssh
+
+hgadmin keeps a user/group database and access configuration in one
+place, and manages repository creation and access control.
+
+Comparison with other tools
+
+- mercurial-server
+  hgadmin supports groups (which mercurial-server does not)
+  hgadmin supports users, whereas mercurial-server just does access control for keys
+  hgadmin supports access via https 
+  hgadmin is about as complicated to set up as mercurial-server
+
+- rhodecode
+  hgadmin supports access via ssh (which rhodecode does not)
+  hgadmin does not require a web server or some complicated setup
+
+
+This package consists of two scripts, hg-ssh and hgadmin.
+
+hg-ssh
+
+hg-ssh is supposed to be invoked by the ssh-server as a wrapper around
+the "ordinary" hg, via the "command=..." option in the authorized_keys
+file.
+
+It requires two arguments. Its first argument is the directory where
+the repositories are located. Its second argument ist the user
+associated with the ssh-key.
+
+hg-ssh will parse the environment variable SSH_ORIGINAL_COMMAND (as
+set by ssh) for an attempt at repository creation or access. If
+neither matches, hg-ssh will exit. 
+
+If the value of SSH_ORIGINAL_COMMAND looks like an attempt at
+repository creation (i.e. it matches the regex '^hg init .*$'), hg-ssh
+will check whether repository creation is enabled. If so, it will pass
+the name of the repository to be created and the creating user to the
+hgadmin script.
+
+If the value of SSH_ORIGINAL_COMMAND looks like an attempt at
+repository access (i.e. it matches the regex '^hg -R .* serve --stdio$', 
+
+hg-ssh will check whether a directory with this name exists and looks
+like it is managed by hgadmin (by checking the presence of the file
+'.hg/ADMINISTRATED_BY_HGADMIN'). If said file is not present, hg-ssh
+will abort.  Next, hg-ssh will attempt to parse the repository-local
+configuration and check whether its username is present in the list of
+users allowed to read from or write to the repository. If the user is
+not allowed to read, hg-ssh will abort.  If the user is not allowed to
+write to the repository, hg-ssh will execute:
+
+'hg serve --stdio -R REPO --config hooks.prechangegroup=false --config hooks.pretxnchangegroup=false'
+
+Otherwise (i.e. if the user is allowed to read and write) hg-ssh will
+execute:
+
+'hg serve --stdio -R REPO'.
+
+
+hgadmin
+
+The hgadmin script serves several purposes, depending on the way it is
+called. 
+
+If called like 'hgadmin mkrepo USER PATH' it will read the
+configuration, determine whether USER is allowed to create a
+repository at PATH, and, if he is, hgadmin will create a repository.
+
+If called like 'hgadmin updateauth' it will read its configuration,
+and refresh access configuration.
+
+
+Configuration
+
+All the configuration of hgadmin resides in one directory. There are
+two configuration files and one directory for the users' ssh keys.
+
+The first configuration file is named 'config'. Its format is standard
+ini-format (as understood by python's ConfigParser).
+
+There are three sections in the 'config'-file, named 'paths', 'groups' and 'users'.
+
+The section 'paths' has six possible settings:
+
+  - 'repopath' -- directory path that contains the managed repositories
+  - 'htpasswdpath' -- path to the htpasswdfile, if present
+  - 'sshauthkeyspath' -- path to the authorized_keys file
+  - 'hg-ssh' -- path to the hg-ssh script
+
+The section 'users' has exactly one setting, named 'users'.
+Its value is a comma separated list of the users.
+
+The section 'groups' contains the groups. A groupname is encoded in
+the name of a setting; the users belonging to the group end up in the
+value of the setting.
+
+
+Installation
+

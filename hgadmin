@@ -63,8 +63,8 @@ def message(msg, messagelevel="info"):
     print messagelevel, ":", msg
 
 def debug(msg):
-    #message(msg, "debug")
-    pass
+    message(msg, "debug")
+    #pass
 
 def warn(msg):
     message(msg, "warning")
@@ -120,7 +120,7 @@ class confobj: # object to save configuration settings
         self.groupdict = None
         self.accessdict = None
         self.paths = None
-    def __str__(self):
+    def __repr__(self):
         return "config:\n" \
             + "  userlist: "   + repr(self.userlist) + "\n" \
             + "  groupdict: "  + repr(self.groupdict) + "\n" \
@@ -137,18 +137,14 @@ def parse_config(confdir):
                 return False
         return True
     
-    def valid_repopath(repo):
-        if not repo.startswith(os.sep):
+    def valid_repopattern(pattern):
+        if pattern.endswith('**'):
+            pattern = pattern[:-2]
+        elif pattern.endswith('*'):
+            pattern = pattern[:-1]
+        if pattern.startswith('.') or pattern.find('/.') != -1:
             return False
-        if repo.endswith('**'):
-            repo = repo[:-2]
-        elif repo.endswith('*'):
-            repo = repo[:-1]
-        if repo.find('*') != -1:
-            return False
-        if repo.find(os.sep + '.hg' + os.sep) != -1:
-            return False
-        if repo.endswith(os.sep + '.hg'):
+        if pattern.find('*') != -1:
             return False
         return True
   
@@ -160,8 +156,6 @@ def parse_config(confdir):
     paths = {}
     groupdict = {}
     # set some defaults
-    paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
-    paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['hg-ssh']          = os.path.join(confdir, 'hg-ssh')
     paths['repopath']        = os.path.expanduser('~/repos')
     paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
@@ -169,6 +163,8 @@ def parse_config(confdir):
     for option in paths:
         if p.has_option('paths', option):
             paths[option] = os.path.expanduser(p.get('paths', option))
+    paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
+    paths['sshkeydir']       = os.path.join(confdir, 'keys')
     for group in p.options('groups'):
         groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]
     userlist = [x.strip() for x in p.get('users', 'users').split(',')]
@@ -217,8 +213,8 @@ def parse_config(confdir):
                 groupdict[g].remove(u)
     todelete = []
     for repo in accessdict:
-        if not valid_repopath(repo):
-            warn('repo path %s is invalid' % repo)
+        if not valid_repopattern(repo):
+            warn('repo pattern %s is invalid' % repo)
             todelete.append(repo)
             continue
         for ug in accessdict[repo]:
@@ -294,8 +290,10 @@ def gen_hgrc(repo):
 
 def fetchkey(keyfile):
     try:
-        key = subprocess.check_output(["ssh-keygen", "-i", "-f", keyfile], stderr=subprocess.STDOUT)
-        return [key]
+        x = subprocess.Popen(["ssh-keygen", "-i", "-f", keyfile], stderr=subprocess.STDOUT)
+        key = x.communicate()[0]
+        if x.returncode == 0:
+            return [key]
     except subprocess.CalledProcessError as e:
         pass
     try:
@@ -323,8 +321,7 @@ def gen_authkeys():
                 continue
             for key in keylist:
                 tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
-                tmpfile.write('"' +config.paths['hg-ssh'] + ' '+ user + ' " ' + key + '\n')
-               #tmpfile.write('"sshwrapper ' + user + ' " ' + key + '\n')
+                tmpfile.write('"' +config.paths['hg-ssh'] +' ' + config.paths['repopath'] + ' '+ user + ' " ' + key + '\n')
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
 
