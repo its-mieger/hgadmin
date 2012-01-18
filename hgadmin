@@ -273,13 +273,15 @@ def gen_hgrc(repo):
             writelist.add(user)
             readlist.add(user)
     tmpfile.write("[web]\n")
+    tmpfile.write("deny_push = *\n")
+    tmpfile.write("deny_read = *\n")
     tmpfile.write("allow_read = ")
     sep = ''
     for user in readlist:
         tmpfile.write(sep + user)
         sep = ', '
     tmpfile.write("\n")
-    tmpfile.write("allow_write = ")
+    tmpfile.write("allow_push = ")
     sep = ''
     for user in writelist:
         tmpfile.write(sep + user)

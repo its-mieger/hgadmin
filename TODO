@@ -31,10 +31,9 @@
 -> ssh-kommando
    1) fallunterscheidung: init oder serve?
    
--> bei ssh-wrapper:
-   readonly-serve mit:
-                  hg -R $REPO serve --stdio --config hooks.prechangegroup=false --config hooks.pretxnchangegroup=false
-   rw-serve mit: 
-                  hg -R $REPO serve --stdio
-   init mit:
-                  mkdir -p $REPO; hg init $REPO; ... .hg/DATEIEN erzeugen nicht vergessen!!
+-------------------------------------------------------------------
+
+bei konfigurationserzeugung:
+    hidden = true
+    deny_read = *
+    deny_write = *

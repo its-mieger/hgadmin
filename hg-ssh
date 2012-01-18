@@ -105,8 +105,8 @@ def allow_access(repo, user):
         repo = hg.repository(ui.ui(), repo)
         denyread   = repo.ui.configlist("web", "deny_read")  
         allowread  = repo.ui.configlist("web", "allow_read") 
-        denywrite  = repo.ui.configlist("web", "deny_write") 
-        allowwrite = repo.ui.configlist("web", "allow_write")
+        denywrite  = repo.ui.configlist("web", "deny_push") 
+        allowwrite = repo.ui.configlist("web", "allow_push")
     except Exception:
         fail("could not access repository configuration")
     readaccess  = ((allowread  == ['*'] or user in allowread ) \
