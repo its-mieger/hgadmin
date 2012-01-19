@@ -23,6 +23,12 @@ conffiles["hook-examples"] = """# example for how to add hooks to config-repo hg
 """
 
 conffiles["hgrc"] = """# sample hgrc to be included in every managed repo
+# things you may want:
+# [web]
+# hidden = True
+# contact = SOMEONERESPONSIBLE
+# push_ssl = True
+# allow_archive = zip
 """
 
 conffiles["README"] = """README file. fill out content!
