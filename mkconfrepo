@@ -1,0 +1,67 @@
+#! /usr/bin/env python
+
+conffiles = {}
+
+conffiles["keys/README"] = """This is the keys directory.
+
+For each user, place a subdirectory here, which is named like the user.
+
+All files in this subdirectory are treated as if they contain ssh keys.
+
+Normal files and subdirectories not named like users are ignored.
+
+You may remove this README-file (if you have a user named README ;) )
+"""
+
+conffiles["access"] = """# dummy text in access configuration. please add this...
+"""
+
+conffiles["config"] = """# dummy text in configuration. please add this...
+"""
+
+conffiles["hook-examples"] = """# example for how to add hooks to config-repo hgrc please here
+"""
+
+conffiles["hgrc"] = """# sample hgrc to be included in every managed repo
+"""
+
+conffiles["README"] = """README file. fill out content!
+"""
+
+import sys, os
+
+if len(sys.argv) != 2:
+   print("please give name of config repository to create!")
+   sys.exit(1)
+
+r = os.system("hg init " + sys.argv[1])
+if r!= 0:
+   print("unable to create config repository")
+   sys.exit(1)
+   
+
+try:
+   os.chdir(sys.argv[1])
+except OSError as e:
+   print("unable to enter newly created config repository??!?")
+   sys.exit(1)
+   
+try:
+   os.mkdir("keys")
+   for k in conffiles:
+      conffd = open(k, "w")
+      conffd.write(conffiles[k])
+      conffd.close()
+      r = os.system("hg add " + k)
+      if r != 0:
+         print("unable to add file %s in config repository to hg" % k)
+         sys.exit(1)
+except OSError as e:
+   print("unable to create config repository default files??")
+   sys.exit(1)
+
+
+r = os.system("hg commit -m 'automatically generated hgadmin configuration repository'")
+if r != 0:
+   print("unable to commit config repository")
+   sys.exit(1)

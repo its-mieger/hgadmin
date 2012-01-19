@@ -13,29 +13,44 @@ BASEDIR='~/hgadmin'
 
 def usage(name):
     print """usage: 
-%s mkrepo USER PATH 
+%s [--confdir DIR] mkrepo USER PATH 
   creates repository at PATH, if USER is
   allowed. PATH is relative to configured repo directory.
-%s updateauth
+%s [--confdir DIR] updateauth
   updates authorization information in the managed repositories,
   regenerates authorized_keys file etc
-%s accesscheck ACCESSTYPE USER PATH
+%s [--confdir DIR] verify
+  reads in configuration and verifies its correctness (giving error messages)
+%s [--confdir DIR] accesscheck ACCESSTYPE USER PATH
   prints TRUE if access ACCESSTYPE on PATH is allowed to USER, else FALSE
-%s getpattern PATH
+%s [--confdir DIR] getpattern PATH
   prints the pattern from the configuration that matches PATH
-""" % (name, name, name, name)
+The configuration directory defaults to "~/hgadmin", which can be overridden 
+by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" option.
+""" % (name, name, name, name, name)
 
 config = None
+confError = False
 
 def main():
     global config
-    config = parse_config(os.path.expanduser(BASEDIR))
+    x = BASEDIR
+    x = os.getenv("HGADMIN-CONFREPO", x)
+    if len(sys.argv) >= 3 and sys.argv[1] == "--confdir":
+        x = sys.argv[2]
+        del sys.argv[2]
+        del sys.argv[1]
+    config = parse_config(os.path.expanduser(x))
     debug("config: "+ repr(config))
     if len(sys.argv) == 4 and sys.argv[1] == "mkrepo":
         gen_repo(sys.argv[2], sys.argv[3])
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "updateauth":
         update_auth()
+        exit(0)
+    elif len(sys.argv) == 2 and sys.argv[1] == "verify":
+        if confError:
+            exit(1)
         exit(0)
     elif len(sys.argv) == 5 and sys.argv[1] == "accesscheck":
         flag, p = sanitize_path(sys.argv[4])
@@ -129,6 +144,7 @@ class confobj: # object to save configuration settings
 
 
 def parse_config(confdir):
+    global confError
 
     def valid_name(name):
         validchars = string.letters + string.digits + '_-+&'
@@ -199,22 +215,26 @@ def parse_config(confdir):
     for u in userlist:
         if not valid_name(u):
             warn("User %s has invalid name" % u)
+            confError = True
             userlist.remove(u)
     todelete = set()
     for g in groupdict:
         if not valid_name(g):
             warn("Group %s has invalid name" % g)
+            confError = True
             todelete.add(g)
     for g in todelete: del groupdict[g]
     for g in groupdict:
         for u in groupdict[g]:
             if not u in userlist:
                 warn("Group %s refers to undefined user %s" %(g, u))
+                confError = True
                 groupdict[g].remove(u)
     todelete = []
     for repo in accessdict:
         if not valid_repopattern(repo):
             warn('repo pattern %s is invalid' % repo)
+            confError = True
             todelete.append(repo)
             continue
         for ug in accessdict[repo]:
@@ -222,9 +242,11 @@ def parse_config(confdir):
                 for userorgroup in accessdict[repo][ug][accesstype]:
                     debug("debug_foo:" +" "+ repo + ' ' + userorgroup +' '+ ug)
                     if ug == 'user' and not userorgroup in userlist:
+                        confError = True
                         warn("repo access to %s refers to undefined user %s" %(repo, userorgroup))
                         accessdict[repo][ug][accesstype].remove(userorgroup)
                     if ug == 'group' and not userorgroup in groupdict:
+                        confError = True
                         warn("repo access to %s refers to undefined group %s" %(repo, userorgroup))
                         accessdict[repo][ug][accesstype].remove(userorgroup)
     for t in todelete:
@@ -273,20 +295,24 @@ def gen_hgrc(repo):
             writelist.add(user)
             readlist.add(user)
     tmpfile.write("[web]\n")
-    tmpfile.write("deny_push = *\n")
-    tmpfile.write("deny_read = *\n")
-    tmpfile.write("allow_read = ")
-    sep = ''
-    for user in readlist:
-        tmpfile.write(sep + user)
-        sep = ', '
-    tmpfile.write("\n")
-    tmpfile.write("allow_push = ")
-    sep = ''
-    for user in writelist:
-        tmpfile.write(sep + user)
-        sep = ', '
-    tmpfile.write("\n")
+    if len(readlist) == 0: 
+        tmpfile.write("deny_read = *\n")
+    else:
+        tmpfile.write("allow_read = ")
+        sep = ''
+        for user in readlist:
+            tmpfile.write(sep + user)
+            sep = ', '
+        tmpfile.write("\n")
+    if len(writelist) == 0:
+        tmpfile.write("deny_push = *\n")
+    else:
+        tmpfile.write("allow_push = ")
+        sep = ''
+        for user in writelist:
+            tmpfile.write(sep + user)
+            sep = ', '
+        tmpfile.write("\n")
     tmpfile.close()
     replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
 
