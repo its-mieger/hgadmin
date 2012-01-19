@@ -78,7 +78,7 @@ conffiles["access"] = """# Access configuration file.
 # The following section names are illegal:
 # [invalid1]                       # does not start with '/'
 # [/invalid2/*/reallyinvalid/**]   # contains a non-trailing '*'
-# [/foo_$$]§??/*]                  # contains a ']'
+# [/foo_$$]}&??/*]                 # contains a ']'
 #
 """
 
@@ -103,7 +103,6 @@ conffiles["config"] = """# Example configuration file. This file has
 # named "htpasswd".
 #
 #   hg-ssh = ~/hgadmin/hg-ssh
-#
 # This path points to the hg-ssh script.
 #
 #   sshauthkeyspath = ~/.ssh/authorized_keys
