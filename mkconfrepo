@@ -36,37 +36,50 @@ conffiles["access"] = """# Access configuration file.
 # characters, which must be the last characters of the pattern.
 #
 # 
-
-
-[/**]
-
-user1 = r
-user2 = r w
-nonexistentuser = Cw
-user3 = rwC
-
-[/repo1]
-
-@group1 = r
-@group2 = wr
-@nonexistentgroup = rwC
-user4 = w
-
-[/sub1/*]
-user2 = Cw
-
-
-[/sub2/**]
-
-user1 = rw
-
-[/sub2/*]
-
-[invalid1]
-
-[/invalid2/*/reallyinvalid/**]
-
-
+#
+# The options in a section are interpreted as group names if they
+# start with an '@' character (i.e. "@group1" refers to the group
+# named "group1"), else as user names.  The option values may contain
+# the characters "r", "w" and "C".  "r" denotes that the user has read
+# access, "w" denotes that the user has read access and write access
+# and "C" denotes that the user has read and write access and may
+# create new repositories.
+# 
+# Examples:
+#     [/**]
+#     user1 = r
+#     user2 = r w
+#     user3 = rwC
+#     @group1 = r
+# 
+# "/**" matches every repository.  user1, user2, user3 and every user
+# in group1 therefore are allowed to read every
+# repository. Additionally, user2 may write to every repository and
+# user3 may write to every repository and create new repositories
+# everywhere.
+# 
+#     [/**]
+#     user1 = rw
+#     user2 = rw 
+#     [/sandbox/*]
+#     user1 = rw
+#     user3 = rw 
+#     [/sandbox/foo]
+#     user1 = rw
+#     user4 = rw 
+# 
+# user1 may write everywhere. user2 may write everywhere except
+# immediately below the "sandbox" - directory. user2 may however write
+# to sandbox/dings/bums, if that repository exists.  user3 may write
+# to every repository immediately below sandbox (p.ex. "sandbox/bar"
+# or "sandbox/test", but neither to "sandbox" itself nor to
+# "sandbox/foo". user4 may only write to "sandbox/foo".
+# 
+# The following section names are illegal:
+# [invalid1]                       # does not start with '/'
+# [/invalid2/*/reallyinvalid/**]   # contains a non-trailing '*'
+# [/foo_$$]§??/*]                  # contains a ']'
+#
 """
 
 conffiles["config"] = """# Example configuration file. This file has
@@ -128,7 +141,8 @@ conffiles["config"] = """# Example configuration file. This file has
 conffiles["hook-examples"] = """# example hook configurations
 # 
 # This file contains some examples for how to add hooks to the
-# configuration repository
+# configuration repository. Please add a path to the hgadmin script if
+# necessary.
 #
 # If this repository is a clone of the real configuration repository, consider 
 # adding this hook:
@@ -160,10 +174,22 @@ conffiles["hgrc"] = """# sample hgrc to be included in every managed repo
 # allow_archive = zip
 """
 
-conffiles["README"] = """README file. fill out content!
+conffiles["README"] = """This is a hg repository containing configuration information for hgadmin.
 
-For now, read the contents of the other files in this repo, learn
-python and read the hgadmin and hg-ssh scripts ;)
+hgadmin expects a number of special files in this configuration directory.
+
+"config"             -- contains general configuration for hgadmin
+"access"             -- contains access configuraiton for hgadmin
+"hgrc"               -- a sample hgrc inserted into every managed repository
+"keys/$USER/keyfile" -- keyfiles containing ssh keys. Refer to keys/README
+"htpasswd"           -- file containing password hashes for users (for use with httpd - authentication)
+
+You may want to add hooks to .hg/hgrc; please refer to "hook-examples"
+for examples and help.
+
+If you want to know more, read the contents of the other files in this
+repo, or learn python and read the hgadmin and hg-ssh scripts ;)
+
 """
 
 import sys, os
