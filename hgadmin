@@ -146,14 +146,14 @@ class confobj: # object to save configuration settings
 def parse_config(confdir):
     global confError
 
-    def valid_name(name):
+    def _valid_name(name):
         validchars = string.letters + string.digits + '_-+&'
         for c in name:
             if not c in validchars:
                 return False
         return True
     
-    def valid_repopattern(pattern):
+    def _valid_repopattern(pattern):
         if pattern.endswith('**'):
             pattern = pattern[:-2]
         elif pattern.endswith('*'):
@@ -213,13 +213,13 @@ def parse_config(confdir):
 
     # now some sanity checks:
     for u in userlist:
-        if not valid_name(u):
+        if not _valid_name(u):
             warn("User %s has invalid name" % u)
             confError = True
             userlist.remove(u)
     todelete = set()
     for g in groupdict:
-        if not valid_name(g):
+        if not _valid_name(g):
             warn("Group %s has invalid name" % g)
             confError = True
             todelete.add(g)
@@ -232,7 +232,7 @@ def parse_config(confdir):
                 groupdict[g].remove(u)
     todelete = []
     for repo in accessdict:
-        if not valid_repopattern(repo):
+        if not _valid_repopattern(repo):
             warn('repo pattern %s is invalid' % repo)
             confError = True
             todelete.append(repo)
@@ -356,16 +356,17 @@ def gen_authkeys():
 
 
 def sanitize_path(unsanitized_path):
-    def split_path_rec(path):
+    def _split_path_rec(path):
         if path == '/':
             return []
         p1, p2 = os.path.split(path)
-        return split_path_rec(p1) + [p2]
+        return _split_path_rec(p1) + [p2]
         
     if os.sep != '/':
         fail("incompatible operating system!")
 
     root = os.path.abspath(config.paths['repopath']).rstrip('/')
+    root = os.path.realpath(root)
     apath = os.path.abspath(root + '/' + unsanitized_path).rstrip('/')
     exist, tocreate = os.path.split(apath)
     real_exist = os.path.realpath(exist)
@@ -385,7 +386,7 @@ def sanitize_path(unsanitized_path):
     if not real_exist.startswith(root):
         return (False, '')
 
-    spl = split_path_rec(whole_new)
+    spl = _split_path_rec(whole_new)
     for pathpart in spl:
         if pathpart[0] == '.':
             return (False, '')
