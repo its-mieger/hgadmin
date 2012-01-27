@@ -42,7 +42,7 @@ def main():
         x = sys.argv[2]
         del sys.argv[2]
         del sys.argv[1]
-    configDir = os.path.expanduser(x)
+    configDir = os.path.abspath(os.path.expanduser(x))
     config = parse_config(configDir)
     debug("config: "+ repr(config))
     if len(sys.argv) == 4 and sys.argv[1] == "mkrepo":
