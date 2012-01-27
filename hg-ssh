@@ -54,7 +54,7 @@ def parse_cmd(repodir):
 
     # now sanitize the path
     repo = repo.strip().strip('"')
-    repo = os.path.abspath(repodir + '/' + repo))
+    repo = os.path.abspath(repodir + '/' + repo)
     if os.sep != '/':
         fail("invalid operating system")
     if len(repo) == 0 or repo.find('"') != -1 or repo.find('/.') != -1:

@@ -1,16 +1,8 @@
--> umstellung zugriffsformat auf ini-style
-   
-   (vgl. svn-format: repo-präfix als section, zugriffsregeln a la read-, init- und write-direktiven)
-   dazu nötig: wildcards nur am ende einer repo-beschreibung; matchen nach "bestem präfix"
-
 -> htpasswd-doku nachlesen: format einfach genug? benutzer ohne passwort definierbar? wenn ja, auf user-file verzichten und nur htpasswd-file verwenden
    - sieht schlecht aus... a) etwas kompliziert b) keine benutzer ohne passwor
      c) keine kommentare
    -> fazit: user-datei macht sinn... (wegen kommentar)
 
-
--> groupfile: weglassen, gruppensection in die normale konfig;
-   dann: gruppenname = user1, user2 usw.
 
 -> push-hook:
    1) update auf tip
