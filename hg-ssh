@@ -6,7 +6,7 @@ import sys, os, re, subprocess
 ######################################################################
 # Configurable Variables
 ######################################################################
-debug = True
+debug = False
 allowcreate = True
 ######################################################################
 # Code starts here, You should not need to modify anything below this
