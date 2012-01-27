@@ -367,7 +367,7 @@ def sanitize_path(unsanitized_path):
 
     root = os.path.abspath(config.paths['repopath']).rstrip('/')
     root = os.path.realpath(root)
-    apath = os.path.abspath(root + '/' + unsanitized_path).rstrip('/')
+    apath = os.path.abspath(unsanitized_path).rstrip('/')
     exist, tocreate = os.path.split(apath)
     real_exist = os.path.realpath(exist)
     whole_new = real_exist + '/' + tocreate
