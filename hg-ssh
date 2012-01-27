@@ -14,8 +14,8 @@ allowcreate = True
 ######################################################################
 
 def main():
-    repodir, user = extractargs()
-    cmd, repo, confdir = parse_cmd(repodir)
+    repodir, user, confdir = extractargs()
+    cmd, repo = parse_cmd(repodir)
     if cmd == "serve":
         serve_impl(user,repo)
     elif cmd == "create":
