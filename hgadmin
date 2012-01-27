@@ -338,6 +338,7 @@ def gen_authkeys():
     keydir = config.paths['sshkeydir']
     authkeypath = config.paths['sshauthkeyspath']
     tmppath = authkeypath +"_tmp"
+    os.umask(077)
     tmpfile = open(tmppath, "w")
     for user in userlist:
         l = []
