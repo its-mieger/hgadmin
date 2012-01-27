@@ -30,17 +30,20 @@ by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" 
 """ % (name, name, name, name, name)
 
 config = None
+configDir = None
 confError = False
 
 def main():
     global config
+    global configDir
     x = BASEDIR
     x = os.getenv("HGADMIN-CONFREPO", x)
     if len(sys.argv) >= 3 and sys.argv[1] == "--confdir":
         x = sys.argv[2]
         del sys.argv[2]
         del sys.argv[1]
-    config = parse_config(os.path.expanduser(x))
+    configDir = os.path.expanduser(x)
+    config = parse_config(configDir)
     debug("config: "+ repr(config))
     if len(sys.argv) == 4 and sys.argv[1] == "mkrepo":
         gen_repo(sys.argv[2], sys.argv[3])
@@ -349,7 +352,7 @@ def gen_authkeys():
                 continue
             for key in keylist:
                 tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
-                tmpfile.write('"' +config.paths['hg-ssh'] +' ' + config.paths['repopath'] + ' '+ user + ' " ' + key + '\n')
+                tmpfile.write('"' +config.paths['hg-ssh'] +' ' + config.paths['repopath'] + ' '+ user + ' ' + configDir + ' " ' + key + '\n')
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
 

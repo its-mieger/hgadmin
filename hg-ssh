@@ -15,18 +15,18 @@ allowcreate = True
 
 def main():
     repodir, user = extractargs()
-    cmd, repo = parse_cmd(repodir)
+    cmd, repo, confdir = parse_cmd(repodir)
     if cmd == "serve":
         serve_impl(user,repo)
     elif cmd == "create":
-        create_impl(user,repo)
+        create_impl(user,repo, confdir)
     else:
         fail("invalid command")
 
 def extractargs():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         fail("invalid command line")
-    return (os.path.expanduser(sys.argv[1]), sys.argv[2])
+    return (os.path.expanduser(sys.argv[1]), sys.argv[2], sys.argv[3])
 
 def fail(message):
     sys.stderr.write("mercurial-server: %s\n" % message)
@@ -81,9 +81,9 @@ def serve_impl(user, repo):
         fail("success: " + repr(rqlist))
     dispatch.dispatch(request(rqlist))
 
-def create_impl(user, repo):
+def create_impl(user, repo, confdir):
     if debug:
-        fail("success: " + repr(["hgadmin", "mkrepo", user, repo]))
+        fail("success: " + repr(["hgadmin", "--confdir", confdir, "mkrepo", user, repo]))
     if not allowcreate:
         fail("repository creation deactivated")
     retv = subprocess.call(["hgadmin", "mkrepo", user, repo])
