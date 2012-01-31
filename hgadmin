@@ -341,9 +341,12 @@ def gen_authkeys():
     predefpath = authkeypath +"_const"
     os.umask(077)
     tmpfile = open(tmppath, "w")
-    predef = open(predefpath, "r")
-    tmpfile.write(predef.read())
-    predef.close()
+    try: 
+        predef = open(predefpath, "r")
+        tmpfile.write(predef.read())
+        predef.close()
+    except IOError as e:
+        pass
     for user in userlist:
         l = []
         try:
