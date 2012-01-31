@@ -373,6 +373,7 @@ def update_htaccess():
     tochange = config.paths['htpasswdpath']
     newfile = config.paths['managedhtpwd']
     if os.path.exists(newfile):
+        os.umask(033)
         shutil.copy(newfile, tochange+"_tmp")
         replacefile(tochange, "_tmp", "_bak")
 
