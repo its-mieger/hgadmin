@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import ConfigParser, string, sys, os, re, subprocess, stat
+import ConfigParser, string, sys, os, re, subprocess, stat, shutil
 from mercurial import ui, hg, dispatch
 
 try:
@@ -107,7 +107,7 @@ def update_auth():
     for repo in repolist:
         gen_hgrc(repo)
     gen_authkeys()
-    #gen_htaccess()
+    update_htaccess()
 
 def list_all_repos():
     repolist = []
@@ -184,6 +184,7 @@ def parse_config(confdir):
             paths[option] = os.path.expanduser(p.get('paths', option))
     paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
+    paths['managedhtpwd']    = os.path.join(confdir, 'htpasswd')
     for group in p.options('groups'):
         groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]
     userlist = [x.strip() for x in p.get('users', 'users').split(',')]
@@ -367,6 +368,13 @@ def gen_authkeys():
                 tmpfile.write('"' +config.paths['hg-ssh'] +' ' + config.paths['repopath'] + ' '+ user + ' ' + configDir + ' " ' + key + '\n')
     tmpfile.close()
     replacefile(authkeypath, "_tmp", "_bak")
+
+def update_htaccess():
+    tochange = config.paths['htpasswdpath']
+    newfile = config.paths['managedhtpwd']
+    if os.path.exists(newfile):
+        shutil.copy(newfile, tochange+"_tmp")
+        replacefile(tochange, "_tmp", "_bak")
 
 
 
