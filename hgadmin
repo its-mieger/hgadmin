@@ -321,7 +321,8 @@ def gen_hgrc(repo):
 
 def fetchkey(keyfile):
     try:
-        x = subprocess.Popen(["ssh-keygen", "-i", "-f", keyfile], stdout=PIPE, stderr=subprocess.STDOUT)
+        x = subprocess.Popen(["ssh-keygen", "-i", "-f", keyfile], 
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         key = x.stdout.read()
         if x.returncode == 0:
             return [key]
