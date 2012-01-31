@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import ConfigParser, string, sys, os, re, subprocess
+import ConfigParser, string, sys, os, re, subprocess, stat
 from mercurial import ui, hg, dispatch
 
 try:
@@ -344,7 +344,10 @@ def gen_authkeys():
     tmpfile = open(tmppath, "w")
     try: 
         predef = open(predefpath, "r")
-        tmpfile.write(predef.read())
+        x = os.fstat(predef.fileno())
+        # read predef file only if not writeable by others
+        if x.st_mode & (stat.S_IWOTH | stat.S_IWGRP) == 0:
+            tmpfile.write(predef.read())
         predef.close()
     except IOError as e:
         pass
