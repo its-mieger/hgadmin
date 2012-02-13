@@ -287,8 +287,8 @@ def gen_hgrc(repo):
     tmpfile = open(tmppath, "w")
     if os.access(globalhgrcprefix, os.R_OK):
         tmpfile.write(open(globalhgrcprefix).read())
-    if os.access(repo+".hg/hgrc_prefix", os.R_OK):
-        tmpfile.write(open(repo+".hg/hgrc_prefix").read())
+    if os.access(repo+"/.hg/hgrc_prefix", os.R_OK):
+        tmpfile.write(open(repo+"/.hg/hgrc_prefix").read())
     readlist = set()
     writelist = set()
     pattern = find_matching_repopat(repo)
