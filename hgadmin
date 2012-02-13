@@ -460,7 +460,7 @@ def find_matching_repopat(path):
     debug("find_matching_repopat: repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
     touse = None
     for repopat in repopatlist:
-        extended_repopat = config.paths['repopath'] + repopat
+        extended_repopat = os.path.normpath(config.paths['repopath'] + repopat)
         debug("find_matching_repopat: repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
         if _match_repopat_to_path(extended_repopat, path):
             if touse == None:
