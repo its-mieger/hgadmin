@@ -6,9 +6,9 @@
 #   sshauthkeyspath = ~/.ssh/authorized_keys
 #   hg-ssh = ~/hgadmin/hg-ssh
   
-repopath = ~/hgadmin-sandbox/repos
-htpasswdpath = ~/hgadmin-sandbox/htpasswd
-sshauthkeyspath = ~/hgadmin-sandbox/authorized_ssh_keys
+repopath = /var/repos/
+htpasswdpath = /var/www/.htpasswd
+sshauthkeyspath = ~/.ssh/authorized_ssh_keys
 
 [groups]
 group1 = user1, user2

@@ -100,6 +100,12 @@ def gen_repo(user, unsanitized_repopath):
     x = open(sanitized_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
     x.close()
+    x = open(sanitized_path+'/.hg/hgrc_prefix', "w")
+    x.write("\n# hgrc_prefix is the repository - local static configuration file\n")
+    x.write("# here, you can put configuration stuff (like email notification etc.\n") 
+    x.write("# that you do not want overwritten automatically\n\n")
+    x.close()
+    
     debug("now creating repo at " + repr(sanitized_path))
 
 def update_auth():
