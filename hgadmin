@@ -217,9 +217,18 @@ def parse_config(confdir):
             if 'w' in accesstype:
                 accessdict[path][prefix].setdefault("write", [])
                 accessdict[path][prefix]["write"].append(realname)
+                accessdict[path][prefix].setdefault("read", [])
+                accessdict[path][prefix]["read"].append(realname)
             if 'C' in accesstype:
                 accessdict[path][prefix].setdefault("create", [])
                 accessdict[path][prefix]["create"].append(realname)
+                accessdict[path][prefix].setdefault("write", [])
+                accessdict[path][prefix]["write"].append(realname)
+                accessdict[path][prefix].setdefault("read", [])
+                accessdict[path][prefix]["read"].append(realname)
+            if accesstype.strip() == '':
+                accessdict[path][prefix].setdefault("deny", [])
+                accessdict[path][prefix]["deny"].append(realname)
 
     # now some sanity checks:
     for u in userlist:
@@ -297,11 +306,10 @@ def gen_hgrc(repo):
         tmpfile.write(open(repo+"/.hg/hgrc_prefix").read())
     readlist = set()
     writelist = set()
-    pattern = find_matching_repopat(repo)
     for user in config.userlist:
-        if allow_access_bypattern("read", user, pattern):
+        if allow_access("read", user, repo):
             readlist.add(user)
-        if allow_access_bypattern("write", user, pattern):
+        if allow_access("write", user, repo):
             writelist.add(user)
             readlist.add(user)
     tmpfile.write("[web]\n")
@@ -427,7 +435,7 @@ def sanitize_path(unsanitized_path):
 
     return (True, whole_new)
 
-def find_matching_repopat(path):
+def find_matching_repopatterns(path):
     def _patprefix(pat):
         while pat != '' and pat[len(pat)-1] in '*' + os.sep:
             pat = pat[:-1]
@@ -458,42 +466,42 @@ def find_matching_repopat(path):
     repopatlist = list(config.accessdict.keys())
     repopatlist.sort(cmp=_cmpbylen)
     debug("find_matching_repopat: repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
-    touse = None
+    retlist = []
     for repopat in repopatlist:
-        extended_repopat = config.paths['repopath'] + repopat
+        extended_repopat = config.paths['repopath'] .rstrip('/') +  repopat
         debug("find_matching_repopat: repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
         if _match_repopat_to_path(extended_repopat, path):
-            if touse == None:
-                touse = repopat
-                break
-    return touse
+            retlist.append(repopat)
+    retlist.sort(cmp=_cmpbylen)
+    debug("find_matching_repopat: found " + repr(retlist))
+    return retlist
 
     
 def allow_access(accesstype, user, repopath):
-    pattern = find_matching_repopat(repopath)
     debug("allow_acces path: " + repr(repopath) + " user: " + repr(user) + " accesstype: " + repr(accesstype))
-    if pattern == None:
-        debug("allow_access: no pattern found")
-        return False;
-    return allow_access_bypattern(accesstype, user, pattern)
-
-def allow_access_bypattern(accesstype, user, pattern):
-    debug("allow_acces_bypattern  pattern: " + repr(pattern) + " user: " + repr(user) + " accesstype: " + repr(accesstype))
-    if pattern == None:
-        return False
-    if not pattern in config.accessdict:
-        return False
-    access = config.accessdict[pattern]
-    if 'user' in access:
-        tocheck = access['user']
-        if accesstype in tocheck and user in tocheck[accesstype]:
+    patterns = find_matching_repopatterns(repopath)
+    for p in patterns:
+        if not 'user' in config.accessdict[p]:
+            continue
+        if user in config.accessdict[p]['user'][accesstype]:
+            debug("allow_access: Success")
             return True
-    if 'group' in access:
-        tocheck = access['group']
-        if accesstype in tocheck:
-            for group in tocheck[accesstype]:
-                if user in config.groupdict[group]:
-                    return True
+        if user in config.accessdict[p]['user'].itervalues():
+            debug("allow_access: Failure")
+            return False
+    for g in config.groupdict:
+        if not user in config.groupdict[g]:
+            continue
+        for p in patterns:
+            if not 'group' in config.accessdict[p]:
+                continue
+            if g in config.accessdict[p]['group'][accesstype]:
+                debug("allow_access: Success")
+                return True
+            if g in config.accessdict[p]['group'].itervalues():
+                debug("allow_access: Failure")
+                return False
+    debug("allow_access: Failure")
     return False
 
 if __name__ == "__main__":
