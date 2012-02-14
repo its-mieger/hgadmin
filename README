@@ -144,7 +144,50 @@ All these invocations share these options:
 
 ** Installation
 
+After installation, the hgadmin scripts are installed on your
+system, but not yet configured.
+
+Basic installation consists of these steps:
+
+  - Clone the hgadmin repository
+	Example: hg clone https://www.hawo-net.de/~jakob/repos/hgadmin /opt/hgadmin
+
+  - Put the hgadmin executables somewhere in the PATH
+	Example: ln -s /opt/hgadmin/{hgadmin,mkconfrepo,hg-ssh} /usr/local/bin
+
+
 ** Configuration
+
+*** Example
+
+General configuration variables:
+
+     USER=hg
+	 REPODIR=/var/repos
+	 CONFDIR=/home/hg/hgadmin-config
+
+Creation of the repository directory and configuration directory:
+
+     mkdir $REPODIR
+	 chown $USER $REPODIR
+	 su $USER mkconfrepo $CONFDIR
+TODO: hooks!	 
+
+Assuming that you have a ssh key to administrate hgadmin, which
+resides in "/tmp/admin_ssh_key":
+
+     su - $USER mkdir -p .ssh
+	 su - $USER chmod go-rwx .ssh
+	 cp /tmp/admin_ssh_key /home/$USER/.ssh/authorized_keys_const
+	 chown $USER /home/$USER/.ssh/authorized_keys_const
+	 chmod go-rwx /home/$USER/.ssh/authorized_keys_const
+
+
+
+echo -e "[paths]\n/ = $REPODIR/**\n" >> $REPODIR/repos.cfg
+
+
+*** 
 
 All the configuration of hgadmin resides in one directory. There are
 two configuration files and one directory for the users' ssh keys.
