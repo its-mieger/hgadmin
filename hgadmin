@@ -32,7 +32,7 @@ by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" 
 config = None
 configDir = None
 confError = False
-_DEBUG = True
+_DEBUG = False
 
 def main():
     global config
@@ -385,6 +385,7 @@ def gen_authkeys():
             l = os.listdir(keydir + '/' + user)
         except OSError as e:
             continue
+        debug("gen_authkeys: for user " + user + " using keyfiles " + repr(l))
         for keyfile in l:
             p = keydir + '/' + user + '/' + keyfile
             keylist = fetchkey(p)
@@ -394,6 +395,7 @@ def gen_authkeys():
                 tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
                 tmpfile.write('"' +config.paths['hg-ssh'] +' ' + config.paths['repopath'] + ' '+ user + ' ' + configDir + ' " ' + key + '\n')
     tmpfile.close()
+    
     replacefile(authkeypath, "_tmp", "_bak")
 
 def update_htaccess():
