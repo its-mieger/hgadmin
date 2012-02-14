@@ -108,7 +108,7 @@ def gen_repo(user, unsanitized_repopath):
         fail("invalid path")
     if not user in config.userlist:
         fail("unknown user")
-    repopatlist = find_matching_repopatterns(sanitize_path)
+    repopatlist = find_matching_repopatterns(sanitized_path)
     if not allow_access("create", user, repopatlist):
         fail("access denied")
     dispatch.dispatch(request(['init', sanitized_path]))
