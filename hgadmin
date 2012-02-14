@@ -38,7 +38,7 @@ def main():
     global config
     global configDir
     global _DEBUG
-    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().addHandler(logging.handlers.RotatingFileHandler("/var/log/hgadmin/hgadmin.log", maxBytes=100000, backupCount=10))
     x = BASEDIR
     x = os.getenv("HGADMIN-CONFREPO", x)
@@ -101,6 +101,9 @@ def debug(msg):
 def warn(msg):
     logging.warning(msg)
 
+def info(msg):
+    logging.info(msg)
+
 def gen_repo(user, unsanitized_repopath):
     path_ok, sanitized_path = sanitize_path(unsanitized_repopath)
     if not path_ok:
@@ -120,8 +123,7 @@ def gen_repo(user, unsanitized_repopath):
     x.write("# here, you can put configuration stuff (like email notification etc.\n") 
     x.write("# that you do not want overwritten automatically\n\n")
     x.close()
-    
-    debug("now creating repo at " + repr(sanitized_path))
+    info("created repo at " + repr(sanitized_path))
 
 def update_auth():
     repolist = list_all_repos()
@@ -129,6 +131,7 @@ def update_auth():
         gen_hgrc(repo)
     gen_authkeys()
     update_htaccess()
+    info("updated access and authentication, config repo at " + os.getenv("HG_NODE", "unknown"))
 
 def list_all_repos():
     repolist = []
