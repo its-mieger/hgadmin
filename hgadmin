@@ -216,6 +216,10 @@ def parse_config(confdir):
     accessdict = {}
     for path in p.sections():
         accessdict.setdefault(path, {})
+        for prefix in ['user', 'group']:
+            accessdict[path].setdefault(prefix, {})
+            for accesstype in ["read", "write", "create", "deny"]:
+                accessdict[path][prefix].setdefault(accesstype, [])
         for userorgroup, accesstype in p.items(path):
             if userorgroup[0] == '@':
                 prefix = 'group'
@@ -223,24 +227,16 @@ def parse_config(confdir):
             else:
                 prefix = 'user'
                 realname = userorgroup
-            accessdict[path].setdefault(prefix, {})
             if 'r' in accesstype:
-                accessdict[path][prefix].setdefault("read", [])
                 accessdict[path][prefix]["read"].append(realname)
             if 'w' in accesstype:
-                accessdict[path][prefix].setdefault("write", [])
                 accessdict[path][prefix]["write"].append(realname)
-                accessdict[path][prefix].setdefault("read", [])
                 accessdict[path][prefix]["read"].append(realname)
             if 'C' in accesstype:
-                accessdict[path][prefix].setdefault("create", [])
                 accessdict[path][prefix]["create"].append(realname)
-                accessdict[path][prefix].setdefault("write", [])
                 accessdict[path][prefix]["write"].append(realname)
-                accessdict[path][prefix].setdefault("read", [])
                 accessdict[path][prefix]["read"].append(realname)
             if accesstype.strip() == '':
-                accessdict[path][prefix].setdefault("deny", [])
                 accessdict[path][prefix]["deny"].append(realname)
 
     # now some sanity checks:
@@ -466,7 +462,7 @@ def find_matching_repopatterns(path):
         return len(ppb)-len(ppa)
     
     def _match_repopat_to_path(repopat, path):
-        debug("matching repopat " + repr(repopat) + " to path " + repr(path))
+        # debug("matching repopat " + repr(repopat) + " to path " + repr(path))
         if repopat.endswith('/**'):
             prefix = repopat[:-3]
             return path.startswith(prefix)
@@ -482,15 +478,15 @@ def find_matching_repopatterns(path):
 
     repopatlist = list(config.accessdict.keys())
     repopatlist.sort(cmp=_cmpbylen)
-    debug("find_matching_repopat: repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
+    # debug("find_matching_repopat: repopatlist: " + repr(repopatlist) + ' path: ' + repr(path))
     retlist = []
     for repopat in repopatlist:
         extended_repopat = os.path.normpath(config.paths['repopath'] + repopat)
-        debug("find_matching_repopat: repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
+        # debug("find_matching_repopat: repopat: " + repr(repopat) + " ext_rp: " + repr(extended_repopat))
         if _match_repopat_to_path(extended_repopat, path):
             retlist.append(repopat)
     retlist.sort(cmp=_cmpbylen)
-    debug("find_matching_repopat: found " + repr(retlist))
+    debug("find_matching_repopat: path " + repr(path) + " found " + repr(retlist))
     return retlist
 
     
@@ -498,29 +494,24 @@ def allow_access(accesstype, user, repopath):
     debug("allow_acces path: " + repr(repopath) + " user: " + repr(user) + " accesstype: " + repr(accesstype))
     patterns = find_matching_repopatterns(repopath)
     for p in patterns:
-        if not 'user' in config.accessdict[p]:
-            continue
-        if accesstype in config.accessdict[p]['user'] and \
-                user in config.accessdict[p]['user'][accesstype]:
-            debug("allow_access: Success")
+        if user in config.accessdict[p]['user'][accesstype]:
+            debug("allow_access: Success, pattern: " + repr(p))
             return True
-        if user in config.accessdict[p]['user'].itervalues():
-            debug("allow_access: Failure")
-            return False
-    for g in config.groupdict:
-        if not user in config.groupdict[g]:
-            continue
-        for p in patterns:
-            if not 'group' in config.accessdict[p]:
-                continue
-            if accesstype in config.accessdict[p]['group'] and \
-                    g in config.accessdict[p]['group'][accesstype]:
-                debug("allow_access: Success")
+        glist = [ x for x,y in config.groupdict.items() if user in y ]
+        for g in glist:
+            if g in config.accessdict[p]['group'][accesstype]:
+                debug("allow_access: Success, pattern: " + repr(p))
                 return True
-            if g in config.accessdict[p]['group'].itervalues():
-                debug("allow_access: Failure")
+        for g in glist:
+            for at in config.accessdict[p]['group']:
+                if g in config.accessdict[p]['group'][at]:
+                    debug("allow_access: Failure, pattern: " + repr(p))
+                    return False
+        for at in config.accessdict[p]['user']:
+            if user in config.accessdict[p]['user'][at]:
+                debug("allow_access: Failure, pattern: " + repr(p))
                 return False
-    debug("allow_access: Failure")
+    debug("allow_access: Failure, no pattern")
     return False
 
 if __name__ == "__main__":
