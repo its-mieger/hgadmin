@@ -1,31 +1,4 @@
--> htpasswd-doku nachlesen: format einfach genug? benutzer ohne passwort definierbar? wenn ja, auf user-file verzichten und nur htpasswd-file verwenden
-   - sieht schlecht aus... a) etwas kompliziert b) keine benutzer ohne passwor
-     c) keine kommentare
-   -> fazit: user-datei macht sinn... (wegen kommentar)
-
-
--> push-hook:
-   1) update auf tip
-   2) sanity check
-   2.1) bei fail: mail mit fehler abschicken, ende
-   3) auth neu generieren
-
--> commit-hook (lokal bei checkout):
-   sanity-check -> abbruch
-
--> auth-regen
-   1) alle repos auflisten
-   2) für alle user / für alle repos / für alle zugriffe:
-      rechte bestimmen, zugriffslisten neu erstellen
-   3) für alle user / für alle keys des users:
-      neuen authorized-keys-eintrag erstellen
-
--> ssh-kommando
-   1) fallunterscheidung: init oder serve?
-   
--------------------------------------------------------------------
-
-bei konfigurationserzeugung:
-    hidden = true
-    deny_read = *
-    deny_write = *
+- doku schreiben
+- testen
+- mail schreiben bei hook-fehler?
+- skript zur manuellen erzeugung von repositories?
