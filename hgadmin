@@ -356,11 +356,13 @@ def fetchkey(keyfile):
             return [key]
     except subprocess.CalledProcessError as e:
         pass
+    keylist = None
     try:
-        return [ x.strip() for x in open(keyfile).readlines() ]
+        keylist =  [ x.strip() for x in open(keyfile).readlines() ]
     except Exception as e:
         # raise e
-        return None
+        pass
+    return keylist
 
 def gen_authkeys():
     userlist = config.userlist
