@@ -500,7 +500,8 @@ def allow_access(accesstype, user, repopath):
     for p in patterns:
         if not 'user' in config.accessdict[p]:
             continue
-        if user in config.accessdict[p]['user'][accesstype]:
+        if accesstype in config.accessdict[p]['user'] and \
+                user in config.accessdict[p]['user'][accesstype]:
             debug("allow_access: Success")
             return True
         if user in config.accessdict[p]['user'].itervalues():
@@ -512,7 +513,8 @@ def allow_access(accesstype, user, repopath):
         for p in patterns:
             if not 'group' in config.accessdict[p]:
                 continue
-            if g in config.accessdict[p]['group'][accesstype]:
+            if accesstype in config.accessdict[p]['group'] and \
+                    g in config.accessdict[p]['group'][accesstype]:
                 debug("allow_access: Success")
                 return True
             if g in config.accessdict[p]['group'].itervalues():
