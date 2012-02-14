@@ -13,20 +13,21 @@ BASEDIR='~/hgadmin'
 
 def usage(name):
     print """usage: 
-%s [--confdir DIR] mkrepo USER PATH 
+%s [-D] [--confdir DIR] mkrepo USER PATH 
   creates repository at PATH, if USER is
   allowed. PATH is relative to configured repo directory.
-%s [--confdir DIR] updateauth
+%s [-D] [--confdir DIR] updateauth
   updates authorization information in the managed repositories,
   regenerates authorized_keys file etc
-%s [--confdir DIR] verify
+%s [-D] [--confdir DIR] verify
   reads in configuration and verifies its correctness (giving error messages)
-%s [--confdir DIR] accesscheck ACCESSTYPE USER PATH
+%s [-D] [--confdir DIR] accesscheck ACCESSTYPE USER PATH
   prints TRUE if access ACCESSTYPE on PATH is allowed to USER, else FALSE
-%s [--confdir DIR] getpattern PATH
+%s [-D] [--confdir DIR] getpattern PATH
   prints the pattern from the configuration that matches PATH
 The configuration directory defaults to "~/hgadmin", which can be overridden 
 by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" option.
+The "-D" option enables the (rather verbose) debugging output.
 """ % (name, name, name, name, name)
 
 config = None

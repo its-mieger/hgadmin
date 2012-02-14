@@ -1,4 +1,41 @@
-Overview
+* Hgadmin for users
+
+** Overview
+
+   Hgadmin as a tool is mainly intended to ease system administration.
+
+   End users should not notice anything related to hgadmin, except
+   hopefully that "everything just works"(tm)
+
+** Requirements
+   As end user, you only need a computer with mercurial.
+
+   A repository server managed with hgadmin will typically export
+   several repositories. These repositories can be accessed via ssh or
+   http(s); hgadmin will manage access control and authentication for
+   both access methods at the same time.
+
+   For http(s) access, typically a password will be needed.
+   Currently, hgadmin supports htpasswd - files as used by apache and
+   several other web servers. An end user will therefore have to set a
+   password. Setting this password is out of scope of hgadmin; contact
+   your system administrators for related information.
+
+   For ssh access, a ssh key is needed. An end user will have to
+   create a ssh key and submit its public part to the administrators.
+
+   Additionally, the administrators will have to configure which
+   repositories the user has read- and commit-access.
+
+** Usage
+
+   After setting a password and submitting a ssh key, an end user can
+   use the repositories managed by hgadmin exactly like any other
+   remote mercurial repository.
+
+* Hgadmin for administrators
+
+** Overview
 
 hgadmin is intended to help with managing access to mercurial
 repositories. Its intended scenario is:
@@ -28,15 +65,22 @@ Comparison with other tools
 
 This package consists of two scripts, hg-ssh and hgadmin.
 
-hg-ssh
+*** hg-ssh
 
 hg-ssh is supposed to be invoked by the ssh-server as a wrapper around
 the "ordinary" hg, via the "command=..." option in the authorized_keys
 file.
 
-It requires two arguments. Its first argument is the directory where
-the repositories are located. Its second argument ist the user
-associated with the ssh-key.
+Note that hg-ssh is only used internally by hgadmin. Ordinarily, a
+system administrator need not care about it.
+
+Given that hg-ssh is the only part that faces direct communication
+with external users, here a description of its actions:
+
+hg-ssh requires three arguments on execution. Its first argument is
+the directory where the repositories are located. Its second argument
+ist the user associated with the ssh-key. Its third argument is the
+directory where the configuration data for hgadmin resides.
 
 hg-ssh will parse the environment variable SSH_ORIGINAL_COMMAND (as
 set by ssh) for an attempt at repository creation or access. If
@@ -45,12 +89,11 @@ neither matches, hg-ssh will exit.
 If the value of SSH_ORIGINAL_COMMAND looks like an attempt at
 repository creation (i.e. it matches the regex '^hg init .*$'), hg-ssh
 will check whether repository creation is enabled. If so, it will pass
-the name of the repository to be created and the creating user to the
-hgadmin script.
+the name of the repository to be created, the creating user and the
+configuration directory to the hgadmin script.
 
 If the value of SSH_ORIGINAL_COMMAND looks like an attempt at
-repository access (i.e. it matches the regex '^hg -R .* serve --stdio$', 
-
+repository access (i.e. it matches the regex '^hg -R .* serve --stdio$'), 
 hg-ssh will check whether a directory with this name exists and looks
 like it is managed by hgadmin (by checking the presence of the file
 '.hg/ADMINISTRATED_BY_HGADMIN'). If said file is not present, hg-ssh
@@ -67,8 +110,14 @@ execute:
 
 'hg serve --stdio -R REPO'.
 
+This hg-ssh script differs from the hg-ssh script found in the
+mercurial distribution, in that it:
+  - does not require all allowed repositories to be mentioned on the
+    commandline instead, the (known) username is checked against the
+    web configuration in the repository
+  – allowes repository creation (by invoking hgadmin)
 
-hgadmin
+*** hgadmin
 
 The hgadmin script serves several purposes, depending on the way it is
 called. 
@@ -80,8 +129,22 @@ repository at PATH, and, if he is, hgadmin will create a repository.
 If called like 'hgadmin updateauth' it will read its configuration,
 and refresh access configuration.
 
+If called like 'hgadmin verify', it will read the configuration, and
+exit successfully if the configuration is valid. If the configuration
+is inconsistent, it will exit unsuccessfully.
 
-Configuration
+If called like 'hgadmin accesscheck ACCESSTYPE USER PATH', the script
+will read the configuration and check (and report) whether the user
+USER is allowed access ACCESSTYPE to a (potentially not yet existing)
+repository located at PATH.
+
+All these invocations share these options:
+  - "-D"            - enables debugging output
+  - "--confdir DIR" - sets configuration directory to DIR
+
+** Installation
+
+** Configuration
 
 All the configuration of hgadmin resides in one directory. There are
 two configuration files and one directory for the users' ssh keys.
@@ -105,6 +168,4 @@ The section 'groups' contains the groups. A groupname is encoded in
 the name of a setting; the users belonging to the group end up in the
 value of the setting.
 
-
-Installation
 
