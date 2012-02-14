@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import ConfigParser, string, sys, os, re, subprocess, stat, shutil
+import ConfigParser, string, sys, os, re, subprocess, stat, shutil, base64
 from mercurial import ui, hg, dispatch
 
 try:
@@ -347,6 +347,18 @@ def gen_hgrc(repo):
     tmpfile.close()
     replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
 
+def valid_sshkey(x):
+    try:
+        xs = x.split()
+        if len(xs) != 3:
+            return False
+        keytype, keystring, comment = xs
+        keydata = base64.decodestring(key_string)
+        str_len = struct.unpack('>I', data[:4])[0]
+        return keydata[4:4+str_len] == keytype
+    except Exception as e:
+        return False
+
 def fetchkey(keyfile):
     try:
         x = subprocess.Popen(["ssh-keygen", "-i", "-f", keyfile], 
@@ -359,6 +371,9 @@ def fetchkey(keyfile):
     keylist = None
     try:
         keylist =  [ x.strip() for x in open(keyfile).readlines() ]
+        for l in keylist:
+            if not valid_sshkey(l):
+                return None
     except Exception as e:
         # raise e
         pass
