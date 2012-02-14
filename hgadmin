@@ -373,6 +373,7 @@ def fetchkey(keyfile):
         keylist =  [ x.strip() for x in open(keyfile).readlines() ]
         for l in keylist:
             if not valid_sshkey(l):
+                warning("keyfile " + repr(keyfile) + " contains stuff that does not seem like a ssh key, ignoring this file")
                 return None
     except Exception as e:
         # raise e
