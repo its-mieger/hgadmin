@@ -38,8 +38,8 @@ def main():
     global config
     global configDir
     global _DEBUG
-    logging.getLogger().addHandler(logging.handlers.SysLogHandler())
-    logging.getLogger().addHandler(logging.StreamHandler(sys.stdin))
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+    logging.getLogger().addHandler(logging.handlers.RotatingFileHandler("/var/log/hgadmin/hgadmin.log", maxBytes=100000, backupCount=10))
     x = BASEDIR
     x = os.getenv("HGADMIN-CONFREPO", x)
     foundArg = True
@@ -53,6 +53,7 @@ def main():
             continue
         if len(sys.argv) >= 2 and sys.argv[1] == "-D":
             _DEBUG = True
+            logging.getLogger().setLevel(logging.DEBUG)
             foundArg = True
             del sys.argv[1]
             continue
@@ -95,9 +96,7 @@ def fail(msg):
 
 
 def debug(msg):
-    if _DEBUG:
-        logging.debug(msg)
-    pass
+    logging.debug(msg)
 
 def warn(msg):
     logging.warning(msg)
