@@ -9,13 +9,15 @@ except AttributeError:
     request = list 
 
 # directory where hgadmin searches for its configuration
-BASEDIR='~/hgadmin'
+BASEDIR='~/hgadmin-config'
 
 def usage(name):
     print """usage: 
-%s [-D] [--confdir DIR] mkrepo USER PATH 
+%s [-D] [--confdir DIR] maybe_create_repo USER PATH 
   creates repository at PATH, if USER is
   allowed. PATH is relative to configured repo directory.
+%s [-D] [--confdir DIR] create_repo PATH 
+  creates repository at PATH. PATH is relative to configured repo directory.
 %s [-D] [--confdir DIR] updateauth
   updates authorization information in the managed repositories,
   regenerates authorized_keys file etc
@@ -61,8 +63,14 @@ def main():
     configDir = os.path.abspath(os.path.expanduser(x))
     config = parse_config(configDir)
     debug("config: "+ repr(config))
-    if len(sys.argv) == 4 and sys.argv[1] == "mkrepo":
+    if len(sys.argv) == 4 and sys.argv[1] == "maybe_create_repo":
         gen_repo(sys.argv[2], sys.argv[3])
+        exit(0)
+    if len(sys.argv) == 3 and sys.argv[1] == "create_repo":
+        path_ok, sanitized_path = sanitize_path(sys.argv[2])
+        if not path_ok:
+            fail("invalid path")
+        gen_repo_nocheck(sanitize_path)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "updateauth":
         update_auth()
@@ -105,6 +113,22 @@ def warn(msg):
 def info(msg):
     logging.info(msg)
 
+def gen_repo_nocheck(sanitized_path):
+    dispatch.dispatch(request(['init', sanitized_path]))
+    x = open(sanitized_path+'/.hg/hgrc_prefix', "w")
+    x.write("\n# hgrc_prefix is the repository - local static configuration file\n")
+    x.write("# here, you can put configuration stuff (like email notification etc.\n") 
+    x.write("# that you do not want overwritten automatically\n\n")
+    x.close()
+    gen_hgrc(sanitized_path)
+    x = open(sanitized_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
+    x.write("foo")
+    x.flush()
+    os.fsync(x.fileno())
+    x.close()
+    info("created repo at " + repr(sanitized_path))
+    
+
 def gen_repo(user, unsanitized_repopath):
     path_ok, sanitized_path = sanitize_path(unsanitized_repopath)
     if not path_ok:
@@ -114,17 +138,7 @@ def gen_repo(user, unsanitized_repopath):
     repopatlist = find_matching_repopatterns(sanitized_path)
     if not allow_access("create", user, repopatlist):
         fail("access denied")
-    dispatch.dispatch(request(['init', sanitized_path]))
-    gen_hgrc(sanitized_path)
-    x = open(sanitized_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
-    x.write("foo")
-    x.close()
-    x = open(sanitized_path+'/.hg/hgrc_prefix', "w")
-    x.write("\n# hgrc_prefix is the repository - local static configuration file\n")
-    x.write("# here, you can put configuration stuff (like email notification etc.\n") 
-    x.write("# that you do not want overwritten automatically\n\n")
-    x.close()
-    info("created repo at " + repr(sanitized_path))
+    gen_repo_nocheck(sanitized_path)
 
 def update_auth():
     repolist = list_all_repos()

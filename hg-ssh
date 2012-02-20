@@ -83,10 +83,10 @@ def serve_impl(user, repo):
 
 def create_impl(user, repo, confdir):
     if debug:
-        fail("success: " + repr(["hgadmin", "--confdir", confdir, "mkrepo", user, repo]))
+        fail("success: " + repr(["hgadmin", "--confdir", confdir, "maybe_create_repo", user, repo]))
     if not allowcreate:
         fail("repository creation deactivated")
-    retv = subprocess.call(["hgadmin", "--confdir", confdir, "mkrepo", user, repo])
+    retv = subprocess.call(["hgadmin", "--confdir", confdir, "maybe_create_repo", user, repo])
     if retv != 0:
         fail("repo creation failed")
     exit(0)
