@@ -30,7 +30,7 @@ def usage(name):
 The configuration directory defaults to "~/hgadmin", which can be overridden 
 by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" option.
 The "-D" option enables the (rather verbose) debugging output.
-""" % (name, name, name, name, name)
+""" % (name, name, name, name, name, name)
 
 config = None
 configDir = None
@@ -67,10 +67,10 @@ def main():
         gen_repo(sys.argv[2], sys.argv[3])
         exit(0)
     if len(sys.argv) == 3 and sys.argv[1] == "create_repo":
-        path_ok, sanitized_path = sanitize_path(sys.argv[2])
+        path_ok, sane_path = sanitize_path(sys.argv[2])
         if not path_ok:
-            fail("invalid path")
-        gen_repo_nocheck(sanitize_path)
+            fail("invalid path: " + repr(sys.argv[2]) + " " + repr(sane_path))
+        gen_repo_nocheck(sane_path)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "updateauth":
         update_auth()
@@ -113,32 +113,32 @@ def warn(msg):
 def info(msg):
     logging.info(msg)
 
-def gen_repo_nocheck(sanitized_path):
-    dispatch.dispatch(request(['init', sanitized_path]))
-    x = open(sanitized_path+'/.hg/hgrc_prefix', "w")
+def gen_repo_nocheck(sane_path):
+    dispatch.dispatch(request(['init', sane_path]))
+    x = open(sane_path+'/.hg/hgrc_prefix', "w")
     x.write("\n# hgrc_prefix is the repository - local static configuration file\n")
     x.write("# here, you can put configuration stuff (like email notification etc.\n") 
     x.write("# that you do not want overwritten automatically\n\n")
     x.close()
-    gen_hgrc(sanitized_path)
-    x = open(sanitized_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
+    gen_hgrc(sane_path)
+    x = open(sane_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
     x.flush()
     os.fsync(x.fileno())
     x.close()
-    info("created repo at " + repr(sanitized_path))
+    info("created repo at " + repr(sane_path))
     
 
 def gen_repo(user, unsanitized_repopath):
-    path_ok, sanitized_path = sanitize_path(unsanitized_repopath)
+    path_ok, sane_path = sanitize_path(unsanitized_repopath)
     if not path_ok:
         fail("invalid path")
     if not user in config.userlist:
         fail("unknown user")
-    repopatlist = find_matching_repopatterns(sanitized_path)
+    repopatlist = find_matching_repopatterns(sane_path)
     if not allow_access("create", user, repopatlist):
         fail("access denied")
-    gen_repo_nocheck(sanitized_path)
+    gen_repo_nocheck(sane_path)
 
 def update_auth():
     repolist = list_all_repos()
