@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+import sys, os, re
+
 conffiles = {}
 
 conffiles["keys/README"] = """This is the keys directory.
@@ -165,12 +167,7 @@ conffiles["hook-examples"] = """# example hook configurations
 """
 
 conffiles["hgrc"] = """# sample hgrc to be included in every managed repo
-# things you may want:
-# [web]
-# hidden = True
-# contact = SOMEONERESPONSIBLE
-# push_ssl = True
-# allow_archive = zip
+# Note that you must not include a [web] section in here!
 """
 
 conffiles["README"] = """This is a hg repository containing configuration information for hgadmin.
@@ -191,40 +188,87 @@ repo, or learn python and read the hgadmin and hg-ssh scripts ;)
 
 """
 
-import sys, os
-
-if len(sys.argv) != 2:
-   print("please give name of config repository to create!")
+def fail(msg):
+   print(msg)
    sys.exit(1)
 
-r = os.system("hg init " + sys.argv[1])
-if r!= 0:
-   print("unable to create config repository")
-   sys.exit(1)
-   
+def createconfrepo(path):
+    r = os.system("hg init " + path)
+    if r!= 0:
+       fail("unable to create config repository")
+    try:
+       os.chdir(path)
+    except OSError as e:
+       fail("unable to enter newly created config repository??!?")
+    try:
+       os.mkdir("keys")
+       for k in conffiles:
+          conffd = open(k, "w")
+          conffd.write(conffiles[k])
+          conffd.close()
+          r = os.system("hg add " + k)
+          if r != 0:
+             fail("unable to add file %s in config repository to hg" % k)
+    except OSError as e:
+       fail("unable to create config repository default files??")
+    r = os.system("hg commit -m 'automatically generated hgadmin configuration repository'")
+    if r != 0:
+       fail("unable to commit config repository")
 
-try:
-   os.chdir(sys.argv[1])
-except OSError as e:
-   print("unable to enter newly created config repository??!?")
-   sys.exit(1)
-   
-try:
-   os.mkdir("keys")
-   for k in conffiles:
-      conffd = open(k, "w")
-      conffd.write(conffiles[k])
-      conffd.close()
-      r = os.system("hg add " + k)
-      if r != 0:
-         print("unable to add file %s in config repository to hg" % k)
-         sys.exit(1)
-except OSError as e:
-   print("unable to create config repository default files??")
+def checkforhooksection(path):
+   x = re.compile(r"^\s*\[\s*hooks\s*\]", re.MULTILINE)
+   fn = path+"/.hg/hgrc"
+   if os.access(fn, os.R_OK):
+      confstring = open(fn, "r").read()
+      if x.search(confstring):
+         fail("configuration part contains [hooks]-section, aborting")
+
+owndir = os.path.dirname(__file__)
+hgadmin_path =  owndir + "/hgadmin"
+
+def addclienthooks(path):
+   checkforhooksection(path)
+   fd = open(path+"/.hg/hgrc", "a")
+   fd.write("\n[hooks]\n")
+   fd.write("precommit.hgadmin = %s verify\n" % hgadmin_path)
+   fd.close()
+
+def addserverhooks(path):
+   checkforhooksection(path)
+   fd = open(path+"/.hg/hgrc", "a")
+   fd.write("\n[hooks]\n")
+   fd.write("changegroup.hgadmin = hg up\n")
+   fd.write("update.hgadmin = %s updateauth\n" % hgadmin_path)
+   fd.write("commit.hgadmin = %s updateauth\n" % hgadmin_path)
+   fd.close()
+
+def usage():
+   x = """usage:
+{name} REPO  -- creates REPO
+{name} --addclienthooks REPO -- creates repo if it doesn't exist, then adds client hooks
+{name} --addserverhooks REPO -- creates repo if it doesn't exist, then adds server hooks
+"""
+   print(x.format(name=sys.argv[0]))
    sys.exit(1)
 
 
-r = os.system("hg commit -m 'automatically generated hgadmin configuration repository'")
-if r != 0:
-   print("unable to commit config repository")
-   sys.exit(1)
+def main():
+   if len(sys.argv) == 3:
+      if sys.argv[1] == '--addclienthooks':
+         if not os.access(sys.argv[2], os.F_OK):
+            createconfrepo(sys.argv[2])
+         addclienthooks(sys.argv[2])
+      elif sys.argv[1] == '--addserverhooks':
+         if not os.access(sys.argv[2], os.F_OK):
+            createconfrepo(sys.argv[2])
+         addserverhooks(sys.argv[2])
+      else:
+         usage()
+   elif len(sys.argv) == 2:
+      createconfrepo(sys.argv[1])
+   else: 
+      usage()
+
+if __name__ == "__main__":
+    main()
+

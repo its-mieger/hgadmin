@@ -12,25 +12,26 @@ except AttributeError:
 BASEDIR='~/hgadmin-config'
 
 def usage(name):
-    print """usage: 
-%s [-D] [--confdir DIR] maybe_create_repo USER PATH 
+    x = """usage: 
+{n} [-D] [--confdir DIR] maybe_create_repo USER PATH 
   creates repository at PATH, if USER is
   allowed. PATH is relative to configured repo directory.
-%s [-D] [--confdir DIR] create_repo PATH 
+{n} [-D] [--confdir DIR] create_repo PATH 
   creates repository at PATH. PATH is relative to configured repo directory.
-%s [-D] [--confdir DIR] updateauth
+{n} [-D] [--confdir DIR] updateauth
   updates authorization information in the managed repositories,
   regenerates authorized_keys file etc
-%s [-D] [--confdir DIR] verify
+{n} [-D] [--confdir DIR] verify
   reads in configuration and verifies its correctness (giving error messages)
-%s [-D] [--confdir DIR] accesscheck ACCESSTYPE USER PATH
+{n} [-D] [--confdir DIR] accesscheck ACCESSTYPE USER PATH
   prints TRUE if access ACCESSTYPE on PATH is allowed to USER, else FALSE
-%s [-D] [--confdir DIR] getpattern PATH
+{n} [-D] [--confdir DIR] getpattern PATH
   prints the pattern from the configuration that matches PATH
 The configuration directory defaults to "~/hgadmin", which can be overridden 
 by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" option.
 The "-D" option enables the (rather verbose) debugging output.
-""" % (name, name, name, name, name, name)
+""" 
+    print(x.format(n=name))
 
 config = None
 configDir = None
@@ -118,7 +119,8 @@ def gen_repo_nocheck(sane_path):
     x = open(sane_path+'/.hg/hgrc_prefix', "w")
     x.write("\n# hgrc_prefix is the repository - local static configuration file\n")
     x.write("# here, you can put configuration stuff (like email notification etc.\n") 
-    x.write("# that you do not want overwritten automatically\n\n")
+    x.write("# that you do not want overwritten automatically\n")
+    x.write("# Note that you must not include a [web] section in here!\n\n")
     x.close()
     gen_hgrc(sane_path)
     x = open(sane_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
