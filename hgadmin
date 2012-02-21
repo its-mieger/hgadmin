@@ -222,6 +222,7 @@ def parse_config(confdir):
         if p.has_option('paths', option):
             paths[option] = os.path.expanduser(p.get('paths', option))
     paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
+    paths['globalhgrc_web_postfix']      = os.path.join(confdir, 'hgrc_web')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['managedhtpwd']    = os.path.join(confdir, 'htpasswd')
     for group in p.options('groups'):
@@ -324,15 +325,30 @@ def replacefile(targetpath, newsuffix, backupsuffix):
     except:
         pass
 
+def checkhgrc_nowebsection(confstring) :
+    x = re.compile(r"^\s*\[\s*web\s*\]", re.MULTILINE)
+    if x.search(confstring):
+        fail("configuration part contains [web]-section")
+
+def checkhgrc_nosection(confstring) :
+    x = re.compile(r"^\s*\[[^]]*\]", re.MULTILINE)
+    if x.search(confstring):
+        fail("configuration part contains any section at all")
+
 def gen_hgrc(repo):
     globalhgrcprefix = config.paths['globalhgrc']
+    globalhgrcwebpostfix = config.paths['globalhgrc_web_postfix']
     debug("gen_hgrc: " + repr(repo))
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
     if os.access(globalhgrcprefix, os.R_OK):
-        tmpfile.write(open(globalhgrcprefix).read())
+        x = open(globalhgrcprefix).read()
+        checkhgrc_nowebsection(x)
+        tmpfile.write(x)
     if os.access(repo+"/.hg/hgrc_prefix", os.R_OK):
-        tmpfile.write(open(repo+"/.hg/hgrc_prefix").read())
+        x = open(repo+"/.hg/hgrc_prefix").read()
+        checkhgrc_nowebsection(x)
+        tmpfile.write(x)
     readlist = set()
     writelist = set()
     repopatlist = find_matching_repopatterns(repo)
@@ -361,6 +377,12 @@ def gen_hgrc(repo):
             tmpfile.write(sep + user)
             sep = ', '
         tmpfile.write("\n")
+    if os.access(repo+"/.hg/hgrc_web_postfix", os.R_OK):
+        x = open(repo+"/.hg/hgrc_web_postfix").read()
+        tmpfile.write(x)
+    if os.access(globalhgrcwebpostfix, os.R_OK):
+        x = open(globalhgrcwebpostfix).read()
+        tmpfile.write(x)
     tmpfile.close()
     replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
 
