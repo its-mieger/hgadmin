@@ -1,8 +1,13 @@
+wesentliche features:
+- check ob [web] sektion in den statischen teilen auftaucht
+- repo-lokale und globale mglk., [web] - einträge zu setzen
+- mkconfrepo: aufbohren, so dass automatisch hooks gesetzt werden?
+- mkconfrepo: interaktiv settings abfragen und eintragen?
+
+wesentliche non-features
 - doku schreiben
 - testen
-- mail schreiben bei hook-fehler?
-- skript zur manuellen erzeugung von repositories?
-- public-gruppe(?)
-- check ob [web] sektion in den statischen teilen auftaucht
-- post-hgrc-teile...
 
+weniger wichtiges:
+- mail schreiben bei hook-fehler?
+- public-gruppe(?)
