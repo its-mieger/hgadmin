@@ -220,11 +220,11 @@ def parse_config(confdir):
     # paths['repopath']        = os.path.expanduser('~/repos')
     # paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
     # paths['sshauthkeyspath'] = os.path.expanduser('~/.ssh/authorized_keys')
-    for option in paths:
+    for option in ['hg-ssh', 'repopath', 'htpasswdpath', 'sshauthkeyspath']:
         if p.has_option('paths', option):
             paths[option] = os.path.expanduser(p.get('paths', option))
     if not 'repopath' in paths:
-        fail("configuration variable 'repopath' not set; aborting")
+        warn("configuration variable 'repopath' not set")
     paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
     paths['globalhgrc_web_postfix']      = os.path.join(confdir, 'hgrc_web')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
@@ -424,7 +424,7 @@ def fetchkey(keyfile):
     return keylist
 
 def gen_authkeys():
-    if not ('sshauthkeyspath' in config.paths and 'hg-ssh' in config.pahts):
+    if not ('sshauthkeyspath' in config.paths and 'hg-ssh' in config.paths):
         info("required configuration settings for authkeyfile generation missing; skipping generation")
         return
     userlist = config.userlist
