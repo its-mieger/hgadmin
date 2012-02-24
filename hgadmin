@@ -215,14 +215,16 @@ def parse_config(confdir):
     conffd.close()
     paths = {}
     groupdict = {}
-    # set some defaults
-    paths['hg-ssh']          = os.path.join(confdir, 'hg-ssh')
-    paths['repopath']        = os.path.expanduser('~/repos')
-    paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
-    paths['sshauthkeyspath'] = os.path.expanduser('~/.ssh/authorized_keys')
+    # do not set defaults...
+    # paths['hg-ssh']          = os.path.join(confdir, 'hg-ssh')
+    # paths['repopath']        = os.path.expanduser('~/repos')
+    # paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
+    # paths['sshauthkeyspath'] = os.path.expanduser('~/.ssh/authorized_keys')
     for option in paths:
         if p.has_option('paths', option):
             paths[option] = os.path.expanduser(p.get('paths', option))
+    if not 'repopath' in paths:
+        fail("configuration variable 'repopath' not set; aborting")
     paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
     paths['globalhgrc_web_postfix']      = os.path.join(confdir, 'hgrc_web')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
@@ -422,6 +424,9 @@ def fetchkey(keyfile):
     return keylist
 
 def gen_authkeys():
+    if not ('sshauthkeyspath' in config.paths and 'hg-ssh' in config.pahts):
+        info("required configuration settings for authkeyfile generation missing; skipping generation")
+        return
     userlist = config.userlist
     keydir = config.paths['sshkeydir']
     authkeypath = config.paths['sshauthkeyspath']
@@ -458,6 +463,9 @@ def gen_authkeys():
     replacefile(authkeypath, "_tmp", "_bak")
 
 def update_htaccess():
+    if not 'htpasswdpath' in config.paths:
+        info("config setting 'htpasswdpath' missing; skipping update of htpasswd file")
+        return
     tochange = config.paths['htpasswdpath']
     newfile = config.paths['managedhtpwd']
     if os.path.exists(newfile):
