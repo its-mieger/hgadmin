@@ -1,5 +1,10 @@
 wesentliche features:
 - mkconfrepo: interaktiv settings abfragen und eintragen?
+- hgadmin: bei nichtgesetzten pfaden meldung abgeben und gewünschte aktion weglassen
+     + repopath -> keine updates der hgrc
+     + sshauthkeyfile -> nicht updaten
+     + hg-ssh-path -> authkeyfile nicht updaten
+     + htpasswd -> nicht updaten
 
 wesentliche non-features
 - doku schreiben
