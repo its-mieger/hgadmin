@@ -118,7 +118,8 @@ the hgadmin scripts are at "/opt/hgadmin"
 The ssh authorized_keys file is at "/home/hg/.ssh/authorized_keys";
 the htpasswd file is at "/var/www/repos/htpasswd".
 
-The main configuration file is "/home/hg/hgadmin-config":
+**** 'config' file
+The main configuration file is "/home/hg/hgadmin-config/config":
 >   [paths]
 >   repopath = /var/repos
 >   htpasswdpath = /var/www/repos/htpasswd
@@ -151,20 +152,64 @@ If user or group names contain invalid characters, or if groups
 reference unknown users, hgadmin will display a warning and ignore
 these users and/or groups.
 
-The access configuration is at "/home/hg/hgadmin-config":
+**** 'access' file
+The access configuration is at "/home/hg/hgadmin-config/access":
 >   [/**]
 >   user1 = rw
->   user2 = rw 
+>   user2 = r
 >   [/sandbox/*]
->   user1 = rw
->   user3 = rw 
+>   user2 = rw
+>   user3 = rw
+>   user4 = r
 >   [/sandbox/foo]
->   user1 = rw
+>   user1 = r
 >   user4 = rw 
 
+In this configuration, presume there are three repositories:
+  (a) "/var/repos/test"
+  (b) "/var/repos/sandbox/bar"
+  (c) "/var/repos/sandbox/foo" 
+
+(a) can be read by user1 and user2, and written by user1.  
+
+(b) can be read by user1, user2, user3 and user4. it can be written by
+user1, user2 and user3.
+
+(c) can be read by user1, user2 and user4. It can be written by user4,
+user3 and user2, but not by user1.
+
+**** 'hgrc' file:
+The 'hgrc' file is at "/home/hg/hgadmin-config/hgrc":
+>   [hooks]
+>   incoming.email = /my/email/hook
+>   [web]
+>   allow_archive = gz, zip
+>   contact = "admin" <admin@somedomain>
+
+Its contents get inserted into the repository local mercurial
+configuration for every managed repository.
+
+In this case, it means that the (email sending) hook is executed every
+time someone pushes changes to a repository, and that the hgweb cgi
+will allow downloading of the specified archives and will show the
+configured contact.
+
+**** 'hgrc_web' file:
+The 'hgrc_web' file is at "/home/hg/hgadmin-config/hgrc_web":
+
+Its contents get inserted into the [web] section of the repository
+local mercurial configuration for every managed repository.
+
+Note that the 'hgrc_web' file MUST NOT contain ANY section - all of
+its settings end up in the [web] section; if you need a setting placed
+in another section put it in the 'hgrc' file!
 
 
 
+**** 'htpasswd' file:
+TODO
+
+**** old stuff...
 ------------------------------------------------
 
 General configuration variables:
@@ -196,8 +241,10 @@ echo -e "[paths]\n/ = $REPODIR/**\n" >> $REPODIR/repos.cfg
 
 *** Description of the Configuration Directory
 
- There are two configuration files and one directory for the users'
+There are four configuration files and one directory for the users'
 ssh keys.
+
+**** 'config' file
 
 The first configuration file is named 'config'. Its format is standard
 ini-format (as understood by python's ConfigParser).
@@ -218,10 +265,27 @@ The section 'groups' contains the groups. A groupname is encoded in
 the name of a setting; the users belonging to the group end up in the
 value of the setting.
 
+**** 'access' file:
+
+The names of the configuration sections refer to repositories.
+
+If a name ends with two '*' characters, it is a wildcard referring to
+everything below this directory down to arbitrary depth.
+
+If a name ends with a single '*' character, it is a wildcard referring to
+everything immediately inside this directory.
+
+If a name does not end with a '*' character, it directly and
+immediately refers to a repository.
+
+**** 'hgrc' file:
+TODO
+**** 'htpasswd' file:
+TODO
 
 ** The scripts
 
-This package consists of two scripts, hg-ssh and hgadmin.
+This package consists of three scripts, hg-ssh, hgadmin and mkconfrepo.
 
 *** hg-ssh
 
@@ -301,3 +365,4 @@ All these invocations share these options:
   - "-D"            - enables debugging output
   - "--confdir DIR" - sets configuration directory to DIR
 	
+*** mkconfrepo
