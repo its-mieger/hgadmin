@@ -106,7 +106,66 @@ Basic installation consists of these steps:
 
 ** Configuration
 
+All the configuration of hgadmin resides in one directory.
+
 *** Example
+
+For this example, the managed repositories reside under "/var/repos".
+
+The hgadmin configuration directory is at "/home/hg/hgadmin-config";
+the hgadmin scripts are at "/opt/hgadmin"
+
+The ssh authorized_keys file is at "/home/hg/.ssh/authorized_keys";
+the htpasswd file is at "/var/www/repos/htpasswd".
+
+The main configuration file is "/home/hg/hgadmin-config":
+>   [paths]
+>   repopath = /var/repos
+>   htpasswdpath = /var/www/repos/htpasswd
+>   hg-ssh = /opt/hgadmin/hg-ssh
+>   sshauthkeyspath = /home/hg/.ssh/authorized_keys
+>   
+>   [groups]
+>   group1 = user1, user2
+>   group2 = user2, user3, user4
+>   
+>   [users]
+>   users = user1, user2,
+>    # strange user with own description:
+>      user3,
+>    # another user description
+>      user4
+>    # and another user description
+>      user5
+
+It contains the relevant paths, a list of users and a list of groups,
+together with the users they contain.
+
+If the "htpasswdpath" option is not specified, hgadmin will not update
+it. Likewise, if either the "hg-ssh" option or the "sshauthkeyspath"
+option are not specified, hgadmin will not update the authorized_keys
+file.  If the "repopath" option is missing, hgadmin will simply
+complain and do nothing.
+
+If user or group names contain invalid characters, or if groups
+reference unknown users, hgadmin will display a warning and ignore
+these users and/or groups.
+
+The access configuration is at "/home/hg/hgadmin-config":
+>   [/**]
+>   user1 = rw
+>   user2 = rw 
+>   [/sandbox/*]
+>   user1 = rw
+>   user3 = rw 
+>   [/sandbox/foo]
+>   user1 = rw
+>   user4 = rw 
+
+
+
+
+------------------------------------------------
 
 General configuration variables:
 
@@ -137,8 +196,8 @@ echo -e "[paths]\n/ = $REPODIR/**\n" >> $REPODIR/repos.cfg
 
 *** Description of the Configuration Directory
 
-All the configuration of hgadmin resides in one directory. There are
-two configuration files and one directory for the users' ssh keys.
+ There are two configuration files and one directory for the users'
+ssh keys.
 
 The first configuration file is named 'config'. Its format is standard
 ini-format (as understood by python's ConfigParser).

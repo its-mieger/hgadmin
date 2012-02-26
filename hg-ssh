@@ -6,8 +6,13 @@ import sys, os, re, subprocess
 ######################################################################
 # Configurable Variables
 ######################################################################
+
+# Set to True to enable debugging 
 debug = False
+
+# Set to False to disallow repository creation via SSH
 allowcreate = True
+
 ######################################################################
 # Code starts here, You should not need to modify anything below this
 # comment.

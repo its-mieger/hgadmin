@@ -114,6 +114,11 @@ def warn(msg):
 def info(msg):
     logging.info(msg)
 
+def closefd(fd):
+    fd.flush()
+    os.fsync(fd.fileno())
+    fd.close()
+
 def gen_repo_nocheck(sane_path):
     dispatch.dispatch(request(['init', sane_path]))
     x = open(sane_path+'/.hg/hgrc_prefix', "w")
@@ -125,9 +130,7 @@ def gen_repo_nocheck(sane_path):
     gen_hgrc(sane_path)
     x = open(sane_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
-    x.flush()
-    os.fsync(x.fileno())
-    x.close()
+    closefd(x)
     info("created repo at " + repr(sane_path))
     
 
@@ -224,9 +227,11 @@ def parse_config(confdir):
         if p.has_option('paths', option):
             paths[option] = os.path.expanduser(p.get('paths', option))
     if not 'repopath' in paths:
-        warn("configuration variable 'repopath' not set")
+        usage(sys.argv[0])
+        fail("configuration variable 'repopath' not set")
+    paths['confdir']         = confdir
     paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
-    paths['globalhgrc_web_postfix']      = os.path.join(confdir, 'hgrc_web')
+    paths['globalhgrc_web']  = os.path.join(confdir, 'hgrc_web')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['managedhtpwd']    = os.path.join(confdir, 'htpasswd')
     for group in p.options('groups'):
@@ -263,7 +268,7 @@ def parse_config(confdir):
                 accessdict[path][prefix]["read"].append(realname)
             if accesstype.strip() == '':
                 accessdict[path][prefix]["deny"].append(realname)
-
+    p = None
     # now some sanity checks:
     for u in userlist:
         if not _valid_name(u):
@@ -341,7 +346,7 @@ def checkhgrc_nosection(confstring) :
 
 def gen_hgrc(repo):
     globalhgrcprefix = config.paths['globalhgrc']
-    globalhgrcwebpostfix = config.paths['globalhgrc_web_postfix']
+    globalhgrcwebpostfix = config.paths['globalhgrc_web']
     debug("gen_hgrc: " + repr(repo))
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
@@ -381,13 +386,15 @@ def gen_hgrc(repo):
             tmpfile.write(sep + user)
             sep = ', '
         tmpfile.write("\n")
-    if os.access(repo+"/.hg/hgrc_web_postfix", os.R_OK):
-        x = open(repo+"/.hg/hgrc_web_postfix").read()
+    if os.access(repo+"/.hg/hgrc_web", os.R_OK):
+        x = open(repo+"/.hg/hgrc_web").read()
+        checkhgrc_nosection(x)
         tmpfile.write(x)
     if os.access(globalhgrcwebpostfix, os.R_OK):
         x = open(globalhgrcwebpostfix).read()
+        checkhgrc_nosection(x)
         tmpfile.write(x)
-    tmpfile.close()
+    closefd(tmpfile)
     replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
 
 def valid_sshkey(x):
@@ -458,7 +465,7 @@ def gen_authkeys():
             for key in keylist:
                 tmpfile.write('no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command=')
                 tmpfile.write('"' +config.paths['hg-ssh'] +' ' + config.paths['repopath'] + ' '+ user + ' ' + configDir + ' " ' + key + '\n')
-    tmpfile.close()
+    closefd(tmpfile)
     
     replacefile(authkeypath, "_tmp", "_bak")
 
@@ -472,7 +479,7 @@ def update_htaccess():
         os.umask(033)
         x = open(tochange+"_tmp", "w")
         x.write(open(newfile, "r").read())
-        x.close()
+        closefd(x)
         replacefile(tochange, "_tmp", "_bak")
 
 
