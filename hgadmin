@@ -37,13 +37,17 @@ config = None
 configDir = None
 confError = False
 _DEBUG = False
+LOGFILE = "/var/log/hgadmin/hgadmin.log"
 
 def main():
     global config
     global configDir
     global _DEBUG
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    logging.getLogger().addHandler(logging.handlers.RotatingFileHandler("/var/log/hgadmin/hgadmin.log", maxBytes=100000, backupCount=10))
+    try:
+        logging.getLogger().addHandler(logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=100000, backupCount=10))
+    except IOError as e:
+        warn('unable to open log file ' + repr(LOGFILE))
     x = BASEDIR
     x = os.getenv("HGADMIN-CONFREPO", x)
     foundArg = True
@@ -211,11 +215,19 @@ def parse_config(confdir):
             return False
         return True
   
-    confFile = os.path.join(confdir, 'config')
-    conffd = open(confFile)
-    p = ConfigParser.RawConfigParser()
-    p.readfp(conffd)
-    conffd.close()
+    try:
+        confFile = os.path.join(confdir, 'config')
+        accessFile = os.path.join(confdir, 'access')
+        accessfd = open(accessFile)
+        conffd = open(confFile)
+        configContent = ConfigParser.RawConfigParser()
+        configContent.readfp(conffd)
+        accessContent = ConfigParser.RawConfigParser()
+        accessContent.readfp(accessfd)
+        conffd.close()
+        accessfd.close()
+    except IOError as e:
+        fail("unable to read configuration files")
     paths = {}
     groupdict = {}
     # do not set defaults...
@@ -224,8 +236,8 @@ def parse_config(confdir):
     # paths['htpasswdpath']    = os.path.expanduser('~/repos/htpasswd')
     # paths['sshauthkeyspath'] = os.path.expanduser('~/.ssh/authorized_keys')
     for option in ['hg-ssh', 'repopath', 'htpasswdpath', 'sshauthkeyspath']:
-        if p.has_option('paths', option):
-            paths[option] = os.path.expanduser(p.get('paths', option))
+        if configContent.has_option('paths', option):
+            paths[option] = os.path.expanduser(configContent.get('paths', option))
     if not 'repopath' in paths:
         usage(sys.argv[0])
         fail("configuration variable 'repopath' not set")
@@ -234,23 +246,18 @@ def parse_config(confdir):
     paths['globalhgrc_web']  = os.path.join(confdir, 'hgrc_web')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['managedhtpwd']    = os.path.join(confdir, 'htpasswd')
-    for group in p.options('groups'):
-        groupdict[group] = [x.strip() for x in p.get('groups', group).split(',')]
-    userlist = [x.strip() for x in p.get('users', 'users').split(',')]
+    for group in configContent.options('groups'):
+        groupdict[group] = [x.strip() for x in configContent.get('groups', group).split(',')]
+    userlist = [x.strip() for x in configContent.get('users', 'users').split(',')]
 
-    accessFile = os.path.join(confdir, 'access')
-    accessfd = open(accessFile)
-    p = ConfigParser.RawConfigParser()
-    p.readfp(accessfd)
-    accessfd.close()
     accessdict = {}
-    for path in p.sections():
+    for path in accessContent.sections():
         accessdict.setdefault(path, {})
         for prefix in ['user', 'group']:
             accessdict[path].setdefault(prefix, {})
             for accesstype in ["read", "write", "create", "deny"]:
                 accessdict[path][prefix].setdefault(accesstype, [])
-        for userorgroup, accesstype in p.items(path):
+        for userorgroup, accesstype in accessContent.items(path):
             if userorgroup[0] == '@':
                 prefix = 'group'
                 realname = userorgroup[1:]
@@ -268,7 +275,6 @@ def parse_config(confdir):
                 accessdict[path][prefix]["read"].append(realname)
             if accesstype.strip() == '':
                 accessdict[path][prefix]["deny"].append(realname)
-    p = None
     # now some sanity checks:
     for u in userlist:
         if not _valid_name(u):
@@ -351,14 +357,14 @@ def gen_hgrc(repo):
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
     if os.access(globalhgrcprefix, os.R_OK):
-        tmpfile.write("%include " + globalhgrcprefix)
+        tmpfile.write("\n%include " + globalhgrcprefix)
     if os.access(repo+"/.hg/hgrc_prefix", os.R_OK):
-        tmpfile.write("%include " + repo+"/.hg/hgrc_prefix")
-    tmpfile.write("[web]\n")
-    tmpfile.write("%unset deny_read")
-    tmpfile.write("%unset deny_push")
-    tmpfile.write("%unset allow_read")
-    tmpfile.write("%unset allow_push")
+        tmpfile.write("\n%include " + repo+"/.hg/hgrc_prefix")
+    tmpfile.write("\n\n[web]\n")
+    tmpfile.write("%unset deny_read\n")
+    tmpfile.write("%unset deny_push\n")
+    tmpfile.write("%unset allow_read\n")
+    tmpfile.write("%unset allow_push\n")
     readlist = set()
     writelist = set()
     repopatlist = find_matching_repopatterns(repo)
