@@ -118,6 +118,10 @@ the hgadmin scripts are at "/opt/hgadmin"
 The ssh authorized_keys file is at "/home/hg/.ssh/authorized_keys";
 the htpasswd file is at "/var/www/repos/htpasswd".
 
+The managed repositories belong to the "hg" user, which also has read
+access to the configuration directory (and all its files) and is able
+to change the htpasswd file.
+
 **** 'config' file
 The main configuration file is "/home/hg/hgadmin-config/config":
 >   [paths]
@@ -194,20 +198,13 @@ time someone pushes changes to a repository, and that the hgweb cgi
 will allow downloading of the specified archives and will show the
 configured contact.
 
-**** 'hgrc_web' file:
-The 'hgrc_web' file is at "/home/hg/hgadmin-config/hgrc_web":
-
-Its contents get inserted into the [web] section of the repository
-local mercurial configuration for every managed repository.
-
-Note that the 'hgrc_web' file MUST NOT contain ANY section - all of
-its settings end up in the [web] section; if you need a setting placed
-in another section put it in the 'hgrc' file!
-
-
-
 **** 'htpasswd' file:
-TODO
+The 'htpasswd' file is at "/home/hg/hgadmin-config/htpasswd".
+
+The contents of the 'htpasswd' file are irrelevant to hgadmin. It is
+simply copied to the location specified in the 'config' file (Section
+"paths", configuration setting "htpasswdpath").
+
 
 **** old stuff...
 ------------------------------------------------
