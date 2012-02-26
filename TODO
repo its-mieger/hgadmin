@@ -1,7 +1,5 @@
 bugs:
-- config file parser geht bei benutzernamen kaputt?
-- mkconfrepo erzeugt kaputte pfade bei hooks
-- logfile liegt per default in unzugaenglichem verzeichnis
+- config file parser geht kaputt bei kommentaren mit kommentarzeichen an "nicht-erster stelle"...
 
 wesentliche features:
 - mkconfrepo: interaktiv settings abfragen und eintragen?

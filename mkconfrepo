@@ -223,7 +223,7 @@ def checkforhooksection(path):
       if x.search(confstring):
          fail("configuration part contains [hooks]-section, aborting")
 
-owndir = os.path.dirname(__file__)
+owndir = os.path.abspath(os.path.dirname(__file__))
 hgadmin_path =  owndir + "/hgadmin"
 
 def addclienthooks(path):
