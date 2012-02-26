@@ -214,10 +214,10 @@ def parse_config(confdir):
         if pattern.find('*') != -1:
             return False
         return True
-  
+
+    confFile = os.path.join(confdir, 'config')
+    accessFile = os.path.join(confdir, 'access')
     try:
-        confFile = os.path.join(confdir, 'config')
-        accessFile = os.path.join(confdir, 'access')
         accessfd = open(accessFile)
         conffd = open(confFile)
         configContent = ConfigParser.RawConfigParser()
@@ -329,7 +329,7 @@ def replacefile(targetpath, newsuffix, backupsuffix):
         os.remove(b)
         os.link(targetpath, b)
     except:
-        pass
+        warn("backing up %s didn't work" % targetpath)
     try:
         os.rename(n, targetpath)
     except Exception as e:
@@ -338,21 +338,10 @@ def replacefile(targetpath, newsuffix, backupsuffix):
     try:
         os.remove(b)
     except:
-        pass
-
-def checkhgrc_nowebsection(confstring) :
-    x = re.compile(r"^\s*\[\s*web\s*\]", re.MULTILINE)
-    if x.search(confstring):
-        fail("configuration part contains [web]-section")
-
-def checkhgrc_nosection(confstring) :
-    x = re.compile(r"^\s*\[[^]]*\]", re.MULTILINE)
-    if x.search(confstring):
-        fail("configuration part contains any section at all")
+        warn("removing backupfile %s didn't work" % b)
 
 def gen_hgrc(repo):
     globalhgrcprefix = config.paths['globalhgrc']
-    globalhgrcwebpostfix = config.paths['globalhgrc_web']
     debug("gen_hgrc: " + repr(repo))
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
