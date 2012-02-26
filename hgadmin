@@ -357,14 +357,14 @@ def gen_hgrc(repo):
     tmppath = repo +"/.hg/hgrc_tmp"
     tmpfile = open(tmppath, "w")
     if os.access(globalhgrcprefix, os.R_OK):
-        tmpfile.write("%include " + globalhgrcprefix)
+        tmpfile.write("\n%include " + globalhgrcprefix)
     if os.access(repo+"/.hg/hgrc_prefix", os.R_OK):
-        tmpfile.write("%include " + repo+"/.hg/hgrc_prefix")
-    tmpfile.write("[web]\n")
-    tmpfile.write("%unset deny_read")
-    tmpfile.write("%unset deny_push")
-    tmpfile.write("%unset allow_read")
-    tmpfile.write("%unset allow_push")
+        tmpfile.write("\n%include " + repo+"/.hg/hgrc_prefix")
+    tmpfile.write("\n\n[web]\n")
+    tmpfile.write("%unset deny_read\n")
+    tmpfile.write("%unset deny_push\n")
+    tmpfile.write("%unset allow_read\n")
+    tmpfile.write("%unset allow_push\n")
     readlist = set()
     writelist = set()
     repopatlist = find_matching_repopatterns(repo)
