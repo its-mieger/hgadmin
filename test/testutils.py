@@ -20,7 +20,9 @@ def genmockuprepo(reponame, hgrc_prefix=None):
 def setconfig(configdir, confdict):
     for conffile in confdict:
         if '/' in conffile:
-            os.mkdir(os.path.dirname(reponame + '/' + conffile))
+            dirtocreate = os.path.dirname(configdir + '/' + conffile)
+            if not os.path.exists(dirtocreate):
+                os.mkdir(dirtocreate)
         x = open(configdir + '/' + conffile, "w")
         x.write(confdict[conffile])
         x.close()

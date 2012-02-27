@@ -227,7 +227,7 @@ def parse_config(confdir):
         #debug("option: " + repr(option_split))
         option_retlist =  [ x.strip() for x in option_split if x.strip() != '' ]
         #debug("option: " + repr(option_retlist))
-        return option_retlist
+        return sorted(option_retlist)
 
     confFile = os.path.join(confdir, 'config')
     accessFile = os.path.join(confdir, 'access')
