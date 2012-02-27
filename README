@@ -103,6 +103,40 @@ Basic installation consists of these steps:
   - Put the hgadmin executables somewhere in the PATH
 	Example: ln -s /opt/hgadmin/{hgadmin,mkconfrepo,hg-ssh} /usr/local/bin
 
+Additional preparation:
+
+hgadmin is supposed to run under a dedicated user account.
+
+*** old stuff
+------------------------------------------------
+
+General configuration variables:
+
+     USER=hg
+	 REPODIR=/var/repos
+	 CONFDIR=/home/hg/hgadmin-config
+
+Creation of the repository directory and configuration directory:
+
+     mkdir $REPODIR
+	 chown $USER $REPODIR
+	 su $USER mkconfrepo $CONFDIR
+TODO: hooks!	 
+
+Assuming that you have a ssh key to administrate hgadmin, which
+resides in "/tmp/admin_ssh_key":
+
+     su - $USER mkdir -p .ssh
+	 su - $USER chmod go-rwx .ssh
+	 cp /tmp/admin_ssh_key /home/$USER/.ssh/authorized_keys_const
+	 chown $USER /home/$USER/.ssh/authorized_keys_const
+	 chmod go-rwx /home/$USER/.ssh/authorized_keys_const
+
+
+
+echo -e "[paths]\n/ = $REPODIR/**\n" >> $REPODIR/repos.cfg
+
+
 
 ** Configuration
 
@@ -145,16 +179,6 @@ The main configuration file is "/home/hg/hgadmin-config/config":
 
 It contains the relevant paths, a list of users and a list of groups,
 together with the users they contain.
-
-If the "htpasswdpath" option is not specified, hgadmin will not update
-it. Likewise, if either the "hg-ssh" option or the "sshauthkeyspath"
-option are not specified, hgadmin will not update the authorized_keys
-file.  If the "repopath" option is missing, hgadmin will simply
-complain and do nothing.
-
-If user or group names contain invalid characters, or if groups
-reference unknown users, hgadmin will display a warning and ignore
-these users and/or groups.
 
 **** 'access' file
 The access configuration is at "/home/hg/hgadmin-config/access":
@@ -206,36 +230,6 @@ simply copied to the location specified in the 'config' file (Section
 "paths", configuration setting "htpasswdpath").
 
 
-**** old stuff...
-------------------------------------------------
-
-General configuration variables:
-
-     USER=hg
-	 REPODIR=/var/repos
-	 CONFDIR=/home/hg/hgadmin-config
-
-Creation of the repository directory and configuration directory:
-
-     mkdir $REPODIR
-	 chown $USER $REPODIR
-	 su $USER mkconfrepo $CONFDIR
-TODO: hooks!	 
-
-Assuming that you have a ssh key to administrate hgadmin, which
-resides in "/tmp/admin_ssh_key":
-
-     su - $USER mkdir -p .ssh
-	 su - $USER chmod go-rwx .ssh
-	 cp /tmp/admin_ssh_key /home/$USER/.ssh/authorized_keys_const
-	 chown $USER /home/$USER/.ssh/authorized_keys_const
-	 chmod go-rwx /home/$USER/.ssh/authorized_keys_const
-
-
-
-echo -e "[paths]\n/ = $REPODIR/**\n" >> $REPODIR/repos.cfg
-
-
 *** Description of the Configuration Directory
 
 There are four configuration files and one directory for the users'
@@ -262,9 +256,23 @@ The section 'groups' contains the groups. A groupname is encoded in
 the name of a setting; the users belonging to the group end up in the
 value of the setting.
 
+If the "htpasswdpath" option is not specified, hgadmin will not update
+it. Likewise, if either the "hg-ssh" option or the "sshauthkeyspath"
+option are not specified, hgadmin will not update the authorized_keys
+file.  If the "repopath" option is missing, hgadmin will simply
+complain and do nothing.
+
+If user or group names contain invalid characters, or if groups
+reference unknown users, hgadmin will display a warning and ignore
+these users and/or groups.
+
 **** 'access' file:
 
 The names of the configuration sections refer to repositories.
+
+A configuration section must start with '/'. It is interpreted
+relative to the path configured in the 'repopath' setting in the
+'config'-file.
 
 If a name ends with two '*' characters, it is a wildcard referring to
 everything below this directory down to arbitrary depth.
@@ -276,9 +284,26 @@ If a name does not end with a '*' character, it directly and
 immediately refers to a repository.
 
 **** 'hgrc' file:
-TODO
+
+If present, the settings in this file get included into the settings
+in every managed mercurial repository. Refer to the mercurial
+documentation for its possible contents. 
+
+Note that the settings "web.allow_read", "web.allow_push",
+"web.deny_read" and "web.deny_push" will be overridden by hgadmin; you
+may specify them but they will not have any effect.
+
 **** 'htpasswd' file:
-TODO
+
+If present, and if the configuration setting "htpasswdpath" is
+present, this file will be copied to the location specified in this
+configuration setting. Other than that, the contents of this file will
+be ignored.
+
+**** Other relevant files:
+
+***** '~/.ssh/authorized_keys_const'
+***** '.hg/hgrc_prefix'
 
 ** The scripts
 
@@ -363,3 +388,17 @@ All these invocations share these options:
   - "--confdir DIR" - sets configuration directory to DIR
 	
 *** mkconfrepo
+
+The mkconfrepo is a helper script to create a new mercurial repository
+that doubles as hgadmin configuration directory. It creates the above
+mentioned configuration files, inserts some supposedly helpful
+comments and commits them.
+
+When started with the "--addserverhooks" or "--addclienthooks"
+options, it will also add hooks that call hgadmin. The client hooks
+call hgadmin with the "verify" parameter, to notify you of
+configuration errors. The server hooks first update the repository to
+the latest revision (tip) and then run hgadmin with "updateauth"
+parameter.
+
+
