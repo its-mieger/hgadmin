@@ -202,6 +202,8 @@ def parse_config(confdir):
         for c in name:
             if not c in validchars:
                 return False
+        if len(name) == 0:
+            return False
         return True
     
     def _valid_repopattern(pattern):

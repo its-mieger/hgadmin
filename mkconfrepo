@@ -228,18 +228,20 @@ hgadmin_path =  owndir + "/hgadmin"
 
 def addclienthooks(path):
    checkforhooksection(path)
+   apath = os.path.abspath(path)
    fd = open(path+"/.hg/hgrc", "a")
    fd.write("\n[hooks]\n")
-   fd.write("precommit.hgadmin = %s verify\n" % hgadmin_path)
+   fd.write("precommit.hgadmin = %s --confdir %s verify\n" % (hgadmin_path, path))
    fd.close()
 
 def addserverhooks(path):
    checkforhooksection(path)
+   apath = os.path.abspath(path)
    fd = open(path+"/.hg/hgrc", "a")
    fd.write("\n[hooks]\n")
    fd.write("changegroup.hgadmin = hg up\n")
-   fd.write("update.hgadmin = %s updateauth\n" % hgadmin_path)
-   fd.write("commit.hgadmin = %s updateauth\n" % hgadmin_path)
+   fd.write("update.hgadmin = %s --confdir %s updateauth\n" % (hgadmin_path, apath))
+   fd.write("commit.hgadmin = %s --confdir %s updateauth\n" % (hgadmin_path, apath))
    fd.close()
 
 def usage():
