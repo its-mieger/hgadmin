@@ -327,8 +327,11 @@ def replacefile(targetpath, newsuffix, backupsuffix):
     n = targetpath + newsuffix
     try:
         os.remove(b)
+    except Exception as e:
+        pass
+    try:
         os.link(targetpath, b)
-    except:
+    except Exception as e:
         warn("backing up %s didn't work" % targetpath)
     try:
         os.rename(n, targetpath)
