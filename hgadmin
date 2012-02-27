@@ -217,6 +217,18 @@ def parse_config(confdir):
             return False
         return True
 
+    def _splitoption(option):
+        #debug("option: " + repr(option))
+        option_woc = re.sub(r"#[^\n]*", "", option)
+        #debug("option: " + repr(option_woc))
+        option_notc = option_woc.rstrip().rstrip(',')
+        #debug("option: " + repr(option_notc))
+        option_split =  option_notc.split(',') 
+        #debug("option: " + repr(option_split))
+        option_retlist =  [ x.strip() for x in option_split if x.strip() != '' ]
+        #debug("option: " + repr(option_retlist))
+        return option_retlist
+
     confFile = os.path.join(confdir, 'config')
     accessFile = os.path.join(confdir, 'access')
     try:
@@ -249,8 +261,8 @@ def parse_config(confdir):
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['managedhtpwd']    = os.path.join(confdir, 'htpasswd')
     for group in configContent.options('groups'):
-        groupdict[group] = [x.strip() for x in configContent.get('groups', group).split(',')]
-    userlist = [x.strip() for x in configContent.get('users', 'users').split(',')]
+        groupdict[group] = _splitoption(configContent.get('groups', group)) 
+    userlist = _splitoption(configContent.get('users', 'users'))
 
     accessdict = {}
     for path in accessContent.sections():
