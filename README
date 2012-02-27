@@ -107,36 +107,39 @@ Additional preparation:
 
 hgadmin is supposed to run under a dedicated user account.
 
-*** old stuff
-------------------------------------------------
+Usually, one would use "hg" as username. 
 
-General configuration variables:
+For the sake of the example, let us assume that "hg" has his home
+directory under "/home/hg"; the repositories to serve are under "/var/repos".
 
-     USER=hg
-	 REPODIR=/var/repos
-	 CONFDIR=/home/hg/hgadmin-config
+If the user does not yet exist, create it:
+   useradd -m -d /home/hg hg
+   su - hg mkdir -p .ssh
+   su - hg chmod go-rwx .ssh
 
-Creation of the repository directory and configuration directory:
+Create the repository directory:
 
-     mkdir $REPODIR
-	 chown $USER $REPODIR
-	 su $USER mkconfrepo $CONFDIR
-TODO: hooks!	 
+   mkdir -p /var/repos
+   chown hg:hg /var/repos
 
-Assuming that you have a ssh key to administrate hgadmin, which
-resides in "/tmp/admin_ssh_key":
+hgadmin will automatically overwrite the .ssh/authorized_keys file.
 
-     su - $USER mkdir -p .ssh
-	 su - $USER chmod go-rwx .ssh
-	 cp /tmp/admin_ssh_key /home/$USER/.ssh/authorized_keys_const
-	 chown $USER /home/$USER/.ssh/authorized_keys_const
-	 chmod go-rwx /home/$USER/.ssh/authorized_keys_const
+If you want static content in that file, use ".ssh/authorized_keys_const".
 
+If the user already exists and has important entries in the
+authorized_keys file: 
 
+   su - hg cp .ssh/authorized_keys  .ssh/authorized_keys_const
 
-echo -e "[paths]\n/ = $REPODIR/**\n" >> $REPODIR/repos.cfg
+If you want to be able to login with a ssh key (located at "/tmp/admin_ssh_key"):
 
+   su - hg cat /tmp/admin_ssh_key >> .ssh/authorized_keys_const
+   su - hg cat /tmp/admin_ssh_key >> .ssh/authorized_keys
 
+Usually, you want the hgadmin configuration directory managed by hg. 
+There is a nice helper script for that:
+  
+  su - hg mkconfrepo --addserverhooks hgadmin-config
 
 ** Configuration
 
@@ -303,7 +306,30 @@ be ignored.
 **** Other relevant files:
 
 ***** '~/.ssh/authorized_keys_const'
+
+The hgadmin script automatically overwrites the contents of
+"~/.ssh/authorized_keys" with the keys in the "keys" subdirectory.
+
+If you want static content in that file, put it in
+'~/.ssh/authorized_keys_const'.  It will be inserted at the beginning
+of "~/.ssh/authorized_keys" every time that file is regenerated.
+
 ***** '.hg/hgrc_prefix'
+
+The ".hg/hgrc" file in every managed repository is automatically
+overwritten. If you want static repository-local configuration, put it
+in ".hg/hgrc_prefix". If present, the settings in that file will get
+included into the settings of the managed repository.
+
+The settings will be included after the settings of the "hgrc" file in
+the hgadmin configuration directory, so they can override global
+settings.
+
+Refer to the mercurial documentation for its possible contents.
+
+Note that the settings "web.allow_read", "web.allow_push",
+"web.deny_read" and "web.deny_push" will be overridden by hgadmin; you
+may specify them but they will not have any effect.
 
 ** The scripts
 
