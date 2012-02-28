@@ -46,6 +46,7 @@ _DEBUG = False
 LOGFILE = "/var/log/hgadmin/hgadmin.log"
 
 def main():
+    """main function"""
     global config
     global configDir
     global _DEBUG
@@ -129,26 +130,32 @@ def main():
         exit(1)
 
 def fail(msg):
+    """helper function in case of catastrophic error"""
     logging.error(msg)
     print "failure:", msg
     exit(1)
 
 
 def debug(msg):
+    """helper function for debugging"""
     logging.debug(msg)
 
 def warn(msg):
+    """helper function for important warnings"""
     logging.warning(msg)
 
 def info(msg):
+    """helper function for somewhat important information"""
     logging.info(msg)
 
 def closefd(fd):
+    """helper function to reliably close and flush a file"""
     fd.flush()
     os.fsync(fd.fileno())
     fd.close()
 
 def make_repo_managed(sane_path, save_hgrc = False):
+    """converts a unmanaged repo to a managed repository"""
     if save_hgrc:
         try:
             os.rename(sane_path+'/.hg/hgrc', sane_path+'/.hg/hgrc_prefix')
@@ -167,12 +174,14 @@ def make_repo_managed(sane_path, save_hgrc = False):
     closefd(x)
 
 def gen_repo_nocheck(sane_path):
+    """creates a managed repository, without any security checks"""
     dispatch.dispatch(request(['init', sane_path]))
     make_repo_managed(sane_path)
     info("created repo at " + repr(sane_path))
     
 
 def gen_repo(user, unsanitized_repopath):
+    """creates a repository, if user is allowed to do"""
     path_ok, sane_path = sanitize_path(unsanitized_repopath, create_needed = True)
     if not path_ok:
         fail("invalid path")
@@ -184,14 +193,16 @@ def gen_repo(user, unsanitized_repopath):
     gen_repo_nocheck(sane_path)
 
 def update_auth():
+    """updates authentication information for all managed repositories, authorized_keys and htpasswd."""
     repolist = list_all_repos()
     for repo in repolist:
         gen_hgrc(repo)
     gen_authkeys()
-    update_htaccess()
+    update_htpasswd()
     info("updated access and authentication, config repo at " + os.getenv("HG_NODE", "unknown"))
 
 def list_all_repos(list_unmanaged = False):
+    """returns a list of all (un)managed repositories in the repo path"""
     repolist = []
     f = config.paths['repopath']
     for root, dirs, files in os.walk(f, topdown=True):
@@ -207,6 +218,7 @@ def list_all_repos(list_unmanaged = False):
     return repolist
 
 def is_managed_repo(repo, isAbs=False):
+    """given a path to a repo, returns True iff said repository is managed by hgadmin"""
     if isAbs:
         repopath = repo
     else:
@@ -217,6 +229,7 @@ def is_managed_repo(repo, isAbs=False):
     return x
 
 def is_unmanaged_repo(repo, isAbs=False):
+    """given a path to a repo, returns True iff said repository is not managed by hgadmin"""
     if isAbs:
         repopath = repo
     else:
@@ -228,6 +241,28 @@ def is_unmanaged_repo(repo, isAbs=False):
     
 
 class confobj: # object to save configuration settings
+    """singleton object to save configuration settings
+
+    important members:
+      userlist: list of users
+      groupdict: dictionary; key is group name, value is list of users in group
+      paths:  dictionary of paths to relevant files.
+        Important Paths:
+           paths['hg-ssh']           path to 'hg-ssh' wrapper script
+           Paths['repopath']         path to directory with the managed repositories
+           paths['htpasswdpath']     path to htpasswd file supposed to be updated
+           paths['sshauthkeyspath']  path to authorized_keys file supposed to be updated
+           paths['confdir']          path to configuration directory
+           paths['globalhgrc']       path to hgrc file for all managed repos
+           paths['sshkeydir']        path to dir containing all users' ssh keys 
+           paths['managedhtpwd']     path to the master htpasswd file
+      accessdict: multi-level dictionary containing access information.
+        Example: 
+           user  "u1" is granted "read"-access to anything matching pattern "/foo/**" iff:
+             "u1" in accessdict["/foo**"]["user"]["read"]
+           group "gq" is granted "write"-access to anything matching pattern "/bar/*" iff:
+             "gq" in accessdict["/bar/*"]["group"]["write"]
+    """
     def __init__(self):
         self.userlist = None
         self.groupdict = None
@@ -242,6 +277,7 @@ class confobj: # object to save configuration settings
 
 
 def parse_config(confdir):
+    """function to parse configuration and initialize configuration object"""
     global confError
 
     def _valid_name(name):
@@ -305,7 +341,6 @@ def parse_config(confdir):
         fail("configuration variable 'repopath' not set")
     paths['confdir']         = confdir
     paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
-    paths['globalhgrc_web']  = os.path.join(confdir, 'hgrc_web')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['managedhtpwd']    = os.path.join(confdir, 'htpasswd')
     for group in configContent.options('groups'):
@@ -387,6 +422,7 @@ def parse_config(confdir):
     return retval
 
 def replacefile(targetpath, newsuffix, backupsuffix):
+    """helper function to atomically replace a file while keeping a backup"""
     b = targetpath + backupsuffix
     n = targetpath + newsuffix
     targetpresent = True
@@ -413,6 +449,7 @@ def replacefile(targetpath, newsuffix, backupsuffix):
             warn("removing backupfile %s didn't work" % b)
 
 def gen_hgrc(repo):
+    """creates a hgrc file for a managed repository, with web access information"""
     globalhgrcprefix = config.paths['globalhgrc']
     debug("gen_hgrc: " + repr(repo))
     tmppath = repo +"/.hg/hgrc_tmp"
@@ -461,6 +498,7 @@ def gen_hgrc(repo):
     replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
 
 def valid_sshkey(x):
+    """helper function to determine whether a string is a ssh key"""
     try:
         xs = x.split()
         if len(xs) != 3:
@@ -473,6 +511,7 @@ def valid_sshkey(x):
         return False
 
 def fetchkey(keyfile):
+    """helper function to fetch all ssh keys from a file"""
     try:
         x = subprocess.Popen(["ssh-keygen", "-i", "-f", keyfile], 
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -496,6 +535,7 @@ def fetchkey(keyfile):
     return keylist
 
 def gen_authkeys():
+    """creates authorized_keys file from authorized_keys_const and keys in configuration directory"""
     if not ('sshauthkeyspath' in config.paths and 'hg-ssh' in config.paths):
         info("required configuration settings for authkeyfile " \
                  + "generation missing; skipping generation")
@@ -538,7 +578,8 @@ def gen_authkeys():
     
     replacefile(authkeypath, "_tmp", "_bak")
 
-def update_htaccess():
+def update_htpasswd():
+    """replaces system htpasswd file with htpasswd file from configuration directory"""
     if not 'htpasswdpath' in config.paths:
         info("config setting 'htpasswdpath' missing; skipping update of htpasswd file")
         return
@@ -668,6 +709,7 @@ def find_matching_repopatterns(path):
 
     
 def allow_access(accesstype, user, patterns):
+    """returns True iff user is allowed access "accesstype" according to the specified patterns"""
     debug("allow_access patterns: " + repr(patterns) + " user: " + repr(user) \
               + " accesstype: " + repr(accesstype))
     for p in patterns:

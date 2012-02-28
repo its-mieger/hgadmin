@@ -1,13 +1,7 @@
-bugs:
-- config file parser geht kaputt bei kommentaren mit kommentarzeichen an "nicht-erster stelle"...
+important non-features
+- write documentation
+- test
 
-wesentliche features:
-- mkconfrepo: interaktiv settings abfragen und eintragen?
-
-wesentliche non-features
-- doku schreiben
-- testen
-
-weniger wichtiges:
-- mail schreiben bei hook-fehler?
-- public-gruppe(?)
+less important stuff:
+- make hook-error write mail?
+- dedicated group for public access?
