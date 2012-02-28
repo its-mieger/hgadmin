@@ -411,6 +411,10 @@ def gen_hgrc(repo):
         if allow_access("write", user, repopatlist):
             writelist.add(user)
             readlist.add(user)
+    readlist = sorted(readlist)
+    writelist = sorted(writelist)
+    debug("gen_hgrc: readlist " + repr(readlist))
+    debug("gen_hgrc: writelist " + repr(writelist))
     if len(readlist) == 0: 
         tmpfile.write("deny_read = *\n")
     else:
@@ -581,6 +585,8 @@ def find_matching_repopatterns(path):
             prefix = repopat[:-2]
             if not path.startswith(prefix):
                 return False
+            if path == prefix:
+                return True
             pathsuffix = path[len(prefix):].strip('/')
             if pathsuffix == '' or '/' in pathsuffix:
                 return False

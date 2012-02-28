@@ -2,13 +2,27 @@ import shutil, os, sys, stat, subprocess
 
 _name = ""
 
+def mkdirhelper(path):
+    plist = []
+    while path != '/' and path != '':
+        plist = [path] + plist
+        path = os.path.dirname(path)
+    retv = True
+    for p in plist:
+        retv = True
+        try:
+            os.mkdir(p)
+        except Exception as e:
+            retv = False
+    return retv
+
 def settestname(testname):
     global _name
     _name = testname
 
 def genmockuprepo(reponame, hgrc_prefix=None):
-    os.mkdir(reponame)
-    os.mkdir(reponame + '/.hg')
+    mkdirhelper(reponame)
+    mkdirhelper(reponame + '/.hg')
     x = open(reponame + '/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
     x.close()
@@ -21,8 +35,7 @@ def setconfig(configdir, confdict):
     for conffile in confdict:
         if '/' in conffile:
             dirtocreate = os.path.dirname(configdir + '/' + conffile)
-            if not os.path.exists(dirtocreate):
-                os.mkdir(dirtocreate)
+            mkdirhelper(dirtocreate)
         x = open(configdir + '/' + conffile, "w")
         x.write(confdict[conffile])
         x.close()
