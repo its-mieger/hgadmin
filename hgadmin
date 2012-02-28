@@ -69,6 +69,11 @@ def main():
             foundArg = True
             del sys.argv[1]
             continue
+        if len(sys.argv) >= 2 and sys.argv[1] == "-q":
+            logging.getLogger().setLevel(logging.WARN)
+            foundArg = True
+            del sys.argv[1]
+            continue
     configDir = os.path.abspath(os.path.expanduser(x))
     config = parse_config(configDir)
     debug("config: "+ repr(config))

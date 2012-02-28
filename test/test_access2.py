@@ -32,6 +32,7 @@ repopath = %s
 [groups]
 g1 = u1, u2
 g2 = u1, u3
+g3 = u4, u5
 
 [users]
 users = u1, u2, u3, u4, u5, u6
@@ -39,28 +40,26 @@ users = u1, u2, u3, u4, u5, u6
         'access':
 """# now, something to test...
 [/foo]
-u6 = rw
+@g1 = r
 [/foo/*]
-u5 = rw
+@g2 = r
 [/foo/**]
-u4 = rw
+@g1 = rw
+[/foo/n1]
+u3 = rw
 [/foo/n1/n1n1]
-u4 = r
-[/foo/n2/*]
-u6 = r
-[/foo/n2/n2n2]
-u6 = 
+u1 = r
 """
 }
     repodict = {
   'bar'        : hgrccontent('', ''),
-  'foo'        : hgrccontent('u4, u5, u6', 'u4, u5, u6'),
-  'foo/n1'     : hgrccontent('u4, u5', 'u4, u5'),
-  'foo/n1/n1n1': hgrccontent('u4', ''),
-  'foo/n1/n1n2': hgrccontent('u4', 'u4'),
-  'foo/n2'     : hgrccontent('u4, u5, u6', 'u4, u5'),
-  'foo/n2/n2n1': hgrccontent('u4, u6', 'u4'),
-  'foo/n2/n2n2': hgrccontent('u4', 'u4'),
+  'foo'        : hgrccontent('u1, u2, u3', ''),
+  'foo/n1'     : hgrccontent('u1, u2, u3', 'u2, u3'),
+  'foo/n1/n1n1': hgrccontent('u1, u2'    , 'u2'),
+  'foo/n1/n1n2': hgrccontent('u1, u2'    , 'u1, u2'),
+  'foo/n2'     : hgrccontent('u1, u2, u3', 'u2'),
+  'foo/n2/n2n1': hgrccontent('u1, u2'    , 'u1, u2'),
+  'foo/n2/n2n2': hgrccontent('u1, u2'    , 'u1, u2'),
 }
     confdir = playground + '/confick'
     execCmd([testdict['mkconfrepo'],  confdir])

@@ -25,8 +25,8 @@ seriosly...
     confdir = playground + '/confick'
     execCmd([testdict['mkconfrepo'],  confdir])
     setconfig(confdir, confdict)
-    execCmd([testdict['hgadmin'], '--confdir', confdir, 'verify'])
-    execCmd([testdict['hgadmin'], '--confdir', confdir, 'updateauth'])
+    execCmd([testdict['hgadmin'], '-q', '--confdir', confdir, 'verify'])
+    execCmd([testdict['hgadmin'], '-q', '--confdir', confdir, 'updateauth'])
     htg = open(htpasswdtogen).read()
     if not htg == confdict['htpasswd']:
         fail("htpasswd creation failed")
