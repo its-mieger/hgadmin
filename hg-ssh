@@ -57,13 +57,17 @@ def parse_cmd(repodir):
     else:
         fail("internal error")
 
-    # now sanitize the path
-    repo = repo.strip().strip('"')
-    repo = os.path.abspath(repodir + '/' + repo)
     if os.sep != '/':
         fail("invalid operating system")
-    if len(repo) == 0 or repo.find('"') != -1 or repo.find('/.') != -1:
+
+    # now sanitize the path
+    repo = repo.strip().strip('"')
+    if len(repo) == 0:
         fail("invalid repository path")
+    repo = repodir + '/' + repo
+    if  repo.find('"') != -1 or repo.find('/.') != -1:
+        fail("invalid repository path")
+    repo = os.path.abspath(repo)
     return (cmd, repo)
 
 def serve_impl(user, repo):

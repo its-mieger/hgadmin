@@ -1,0 +1,10 @@
+#! /usr/bin/env python
+
+import os, sys
+
+x = open(os.environ['hgadmintestwrapperdumpfile'], 'a', 1)
+
+x.write("hgadmin test mockup called\n")
+x.write("command line: " + repr(sys.argv) + "\n")
+
+x.close()

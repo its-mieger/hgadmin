@@ -44,7 +44,7 @@ def fail(message):
     print("test " + _name + " failed: " + message)
     exit(1)
 
-def execCmd(cmd, errMsg = None, expectFailure = False):
+def execCmd(cmd, expectFailure = False, errMsg = None):
     x = subprocess.call(cmd)
     if (x != 0 and not expectFailure) or (x == 0 and expectFailure):
         if errMsg == None:
