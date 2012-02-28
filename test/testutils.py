@@ -8,7 +8,7 @@ def settestname(testname):
 
 def genmockuprepo(reponame, hgrc_prefix=None):
     os.mkdir(reponame)
-    os.mkdir(reponame + '.hg')
+    os.mkdir(reponame + '/.hg')
     x = open(reponame + '/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
     x.close()
