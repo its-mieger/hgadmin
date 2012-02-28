@@ -266,6 +266,7 @@ def parse_config(confdir):
         conffd.close()
         accessfd.close()
     except IOError as e:
+        usage(sys.argv[0])
         fail("unable to read configuration files")
     paths = {}
     groupdict = {}
