@@ -27,6 +27,10 @@ def usage(name):
   prints TRUE if access ACCESSTYPE on PATH is allowed to USER, else FALSE
 {n} [-D] [--confdir DIR] getpattern PATH
   prints the pattern from the configuration that matches PATH
+{n} [-D] [--confdir DIR] listusers
+  lists all users
+{n} [-D] [--confdir DIR] showunmanagedrepos
+  prints a list of all unmanaged repositories
 The configuration directory defaults to "~/hgadmin", which can be overridden 
 by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" option.
 The "-D" option enables the (rather verbose) debugging output.
@@ -88,17 +92,25 @@ def main():
         flag, p = sanitize_path(sys.argv[4])
         repopatlist = find_matching_repopatterns(p)
         if flag:
-            print allow_access(sys.argv[2], sys.argv[3], repopatlist)
+            print(allow_access(sys.argv[2], sys.argv[3], repopatlist))
+            exit(0)  
         else:
-            print False
-        exit(0)  
+            print(False)
+            exit(1)
     elif len(sys.argv) == 3 and sys.argv[1] == "getpattern":
         flag, p = sanitize_path(sys.argv[2])
         if flag:
-            print repr(find_matching_repopatterns(p))
+            print(repr(find_matching_repopatterns(p)))
+            exit(0)  
         else:
-            print False
-        exit(0)  
+            print(False)
+            exit(1)  
+    elif len(sys.argv) == 2 and sys.argv[1] == "listusers":
+        print(config.userlist)
+        exit(0)
+    elif len(sys.argv) == 2 and sys.argv[1] == "showunmanagedrepos":
+        print(list_all_repos(list_unmanaged=True))
+        exit(0)
     else:
         usage(sys.argv[0])
         exit(1)
@@ -157,14 +169,16 @@ def update_auth():
     update_htaccess()
     info("updated access and authentication, config repo at " + os.getenv("HG_NODE", "unknown"))
 
-def list_all_repos():
+def list_all_repos(list_unmanaged = False):
     repolist = []
     f = config.paths['repopath']
     for root, dirs, files in os.walk(f, topdown=True):
-        debug("walking: " + repr(root))
         if is_managed_repo(root, isAbs=True):
-            debug("found: " + repr(root))
-            repolist.append(root)
+            if not list_unmanaged:
+                repolist.append(root)
+        elif is_unmanaged_repo(root, isAbs=True):
+            if list_unmanaged:
+                repolist.append(root)
         if '.hg' in dirs: 
             dirs.remove('.hg')
     debug("all repos: " + repr(repolist))
@@ -179,6 +193,17 @@ def is_managed_repo(repo, isAbs=False):
     x = os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
     debug("is_managed_repopath" + repr(repopath) + " : " + repr(x))
     return x
+
+def is_unmanaged_repo(repo, isAbs=False):
+    if isAbs:
+        repopath = repo
+    else:
+        root = config.paths['repopath']
+        repopath = root + '/' + repo
+    x = os.access(repopath + '/.hg/00changelog.i', os.F_OK)
+    debug("is_unmanaged_repo" + repr(repopath) + " : " + repr(x))
+    return x
+    
 
 class confobj: # object to save configuration settings
     def __init__(self):
