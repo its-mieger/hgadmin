@@ -150,7 +150,10 @@ def closefd(fd):
 
 def make_repo_managed(sane_path, save_hgrc = False):
     if save_hgrc:
-        os.rename(sane_path+'/.hg/hgrc', sane_path+'/.hg/hgrc_prefix')
+        try:
+            os.rename(sane_path+'/.hg/hgrc', sane_path+'/.hg/hgrc_prefix')
+        except Exception as e:
+            pass
     elif not os.access(sane_path+'/.hg/hgrc_prefix', os.F_OK):
         x = open(sane_path+'/.hg/hgrc_prefix', "w")
         x.write("\n# hgrc_prefix is the repository - local static configuration file\n")
@@ -543,42 +546,47 @@ def update_htaccess():
 
 
 def sanitize_path(unsanitized_path, create_needed):
-    def _split_path_rec(path):
-        if path == '/':
-            return []
-        p1, p2 = os.path.split(path)
-        return _split_path_rec(p1) + [p2]
-        
     if os.sep != '/':
         fail("incompatible operating system!")
-
+    
+    # make root nice
     root = os.path.abspath(config.paths['repopath']).rstrip('/')
     root = os.path.realpath(root)
-    apath = os.path.abspath(unsanitized_path).rstrip('/')
-    exist, tocreate = os.path.split(apath)
-    real_exist = os.path.realpath(exist)
-    whole_new = real_exist + '/' + tocreate
+
+    # unsan_path_abs shall be a nice version of the interesting path.
+    # unsanitized_path might start with root - if not, prepend it.
+    if not unsanitized_path.startswith(root):
+        unsan_path_abs = os.path.abspath(root + '/' + unsanitized_path).rstrip('/')
+    else:
+        unsan_path_abs = os.path.abspath(unsanitized_path).rstrip('/')
+
+    # exist should exist, tocreate must exist iff create_needed == False
+    exist, tocreate = os.path.split(unsan_path_abs)
+
+    # we want to ignore symlinks - realpath does that
+    real_exist = os.path.realpath(exist).rstrip('/')
+
     debug("sanitizing path " + repr(unsanitized_path))
-    debug("saninfo: " + repr(root) + ' ' + repr(apath) + ' ' + repr(exist) + ' ' + repr(tocreate) + ' ' + repr(real_exist) + ' ' + repr(whole_new))
+    debugdict = {'root': root, 'unsan_path_abs': unsan_path_abs,
+                 'exist': exist, 'tocreate': tocreate, 'real_exist' : real_exist}
+    debug("saninfo: " + repr(debugdict))
 
-    if tocreate == '':
+    # sanity checks for tocreate
+    if ( tocreate == '' or tocreate[0] == '.' 
+         or '"' in tocreate or '/' in tocreate ) :
         return (False, '')
 
-    if not os.path.isdir(real_exist):
+    # sanity checks for real_exist
+    if not( os.path.lexists(real_exist) and os.path.isdir(real_exist) 
+            and real_exist.startswith(root) ):
         return (False, '')
 
+    # finally, the sanitized path
+    whole_new = real_exist + '/' + tocreate
+
+    # whole_new might exist - check for that
     if create_needed and os.path.lexists(whole_new):
         return (False, '')
-
-    if not real_exist.startswith(root):
-        return (False, '')
-
-    spl = _split_path_rec(whole_new)
-    for pathpart in spl:
-        if pathpart[0] == '.':
-            return (False, '')
-        if '"' in pathpart:
-            return (False, '')
 
     return (True, whole_new)
 

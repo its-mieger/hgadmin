@@ -41,12 +41,15 @@ def setconfig(configdir, confdict):
         x.close()
         
 def fail(message):
-    print("test " + _name + ": " + message)
+    print("test " + _name + " failed: " + message)
     exit(1)
 
-def execCmd(cmd ,errMsg = None):
+def execCmd(cmd, errMsg = None, expectFailure = False):
     x = subprocess.call(cmd)
-    if x != 0:
+    if (x != 0 and not expectFailure) or (x == 0 and expectFailure):
         if errMsg == None:
-            errMsg = "command %s failed" % repr(cmd)
+            if expectFailure:
+                errMsg = "command %s didn't fail" % repr(cmd)
+            else:
+                errMsg = "command %s failed" % repr(cmd)
         fail(errMsg)
