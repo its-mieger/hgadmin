@@ -44,17 +44,22 @@ u6 = rw
 u5 = rw
 [/foo/**]
 u4 = rw
-
+[/foo/n1/n1n1]
+u4 = r
+[/foo/n2/*]
+u6 = r
+[/foo/n2/n2n2]
+u6 = 
 """
 }
     repodict = {
   'bar'        : hgrccontent('', ''),
   'foo'        : hgrccontent('u4, u5, u6', 'u4, u5, u6'),
   'foo/n1'     : hgrccontent('u4, u5', 'u4, u5'),
-  'foo/n1/n1n1': hgrccontent('u4', 'u4'),
+  'foo/n1/n1n1': hgrccontent('u4', ''),
   'foo/n1/n1n2': hgrccontent('u4', 'u4'),
-  'foo/n2'     : hgrccontent('u4, u5', 'u4, u5'),
-  'foo/n2/n2n1': hgrccontent('u4', 'u4'),
+  'foo/n2'     : hgrccontent('u4, u5, u6', 'u4, u5'),
+  'foo/n2/n2n1': hgrccontent('u4, u6', 'u4'),
   'foo/n2/n2n2': hgrccontent('u4', 'u4'),
 }
     confdir = playground + '/confick'
