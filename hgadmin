@@ -33,7 +33,7 @@ def usage(name):
   prints a list of all unmanaged repositories
 {n} [-D] [--confdir DIR] make_repo_managed REPO
   converts repository REPO to a managed repository.
-The configuration directory defaults to "~/hgadmin", which can be overridden 
+The configuration directory defaults to "~/hgadmin-config", which can be overridden 
 by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" option.
 The "-D" option enables the (rather verbose) debugging output.
 """ 
