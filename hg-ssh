@@ -34,7 +34,7 @@ def extractargs():
     return (os.path.expanduser(sys.argv[1]), sys.argv[2], sys.argv[3])
 
 def fail(message):
-    sys.stderr.write("mercurial-server: %s\n" % message)
+    sys.stderr.write("hgadmin: %s\n" % message)
     sys.exit(-1)
 
 def parse_cmd(repodir):
