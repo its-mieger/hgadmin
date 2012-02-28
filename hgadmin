@@ -83,16 +83,16 @@ def main():
         gen_repo(sys.argv[2], sys.argv[3])
         exit(0)
     elif len(sys.argv) == 3 and sys.argv[1] == "create_repo":
-        path_ok, sane_path = sanitize_path(sys.argv[2])
+        path_ok, sane_path = sanitize_path(sys.argv[2], create_needed = True)
         if not path_ok:
             fail("invalid path: " + repr(sys.argv[2]) + " " + repr(sane_path))
         gen_repo_nocheck(sane_path)
         exit(0)
     elif len(sys.argv) == 3 and sys.argv[1] == "make_repo_managed":
-        path_ok, sane_path = sanitize_path(sys.argv[2])
+        path_ok, sane_path = sanitize_path(sys.argv[2], create_needed = False)
         if not path_ok:
             fail("invalid path: " + repr(sys.argv[2]) + " " + repr(sane_path))
-        make_repo_managed(sane_path)
+        make_repo_managed(sane_path, save_hgrc = True)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "updateauth":
         update_auth()
@@ -102,7 +102,7 @@ def main():
             exit(1)
         exit(0)
     elif len(sys.argv) == 5 and sys.argv[1] == "accesscheck":
-        flag, p = sanitize_path(sys.argv[4])
+        flag, p = sanitize_path(sys.argv[4], create_needed = False)
         repopatlist = find_matching_repopatterns(p)
         if flag:
             print(allow_access(sys.argv[2], sys.argv[3], repopatlist))
@@ -111,7 +111,7 @@ def main():
             print(False)
             exit(1)
     elif len(sys.argv) == 3 and sys.argv[1] == "getpattern":
-        flag, p = sanitize_path(sys.argv[2])
+        flag, p = sanitize_path(sys.argv[2], create_needed = False)
         if flag:
             print(repr(find_matching_repopatterns(p)))
             exit(0)  
@@ -148,8 +148,10 @@ def closefd(fd):
     os.fsync(fd.fileno())
     fd.close()
 
-def make_repo_managed(sane_path):
-    if not os.access(sane_path+'/.hg/hgrc_prefix', os.F_OK):
+def make_repo_managed(sane_path, save_hgrc = False):
+    if save_hgrc:
+        os.rename(sane_path+'/.hg/hgrc', sane_path+'/.hg/hgrc_prefix')
+    elif not os.access(sane_path+'/.hg/hgrc_prefix', os.F_OK):
         x = open(sane_path+'/.hg/hgrc_prefix', "w")
         x.write("\n# hgrc_prefix is the repository - local static configuration file\n")
         x.write("# here, you can put configuration stuff (like email notification etc.\n") 
@@ -168,7 +170,7 @@ def gen_repo_nocheck(sane_path):
     
 
 def gen_repo(user, unsanitized_repopath):
-    path_ok, sane_path = sanitize_path(unsanitized_repopath)
+    path_ok, sane_path = sanitize_path(unsanitized_repopath, create_needed = True)
     if not path_ok:
         fail("invalid path")
     if not user in config.userlist:
@@ -540,7 +542,7 @@ def update_htaccess():
 
 
 
-def sanitize_path(unsanitized_path):
+def sanitize_path(unsanitized_path, create_needed):
     def _split_path_rec(path):
         if path == '/':
             return []
@@ -565,7 +567,7 @@ def sanitize_path(unsanitized_path):
     if not os.path.isdir(real_exist):
         return (False, '')
 
-    if os.path.lexists(whole_new):
+    if create_needed and os.path.lexists(whole_new):
         return (False, '')
 
     if not real_exist.startswith(root):
