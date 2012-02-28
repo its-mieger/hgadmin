@@ -365,6 +365,7 @@ def parse_config(confdir):
 def replacefile(targetpath, newsuffix, backupsuffix):
     b = targetpath + backupsuffix
     n = targetpath + newsuffix
+    targetpresent = True
     try:
         os.remove(b)
     except Exception as e:
@@ -372,7 +373,10 @@ def replacefile(targetpath, newsuffix, backupsuffix):
     try:
         os.link(targetpath, b)
     except Exception as e:
-        warn("backing up %s didn't work" % targetpath)
+        if os.access(targetpath, os.F_OK):
+            warn("backing up %s didn't work" % targetpath)
+        else:
+            targetpresent = False
     try:
         os.rename(n, targetpath)
     except Exception as e:
@@ -381,7 +385,8 @@ def replacefile(targetpath, newsuffix, backupsuffix):
     try:
         os.remove(b)
     except:
-        warn("removing backupfile %s didn't work" % b)
+        if targetpresent:
+            warn("removing backupfile %s didn't work" % b)
 
 def gen_hgrc(repo):
     globalhgrcprefix = config.paths['globalhgrc']
