@@ -56,7 +56,7 @@ def main():
     global config
     global configDir
     global _DEBUG
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO, format='%(levelname)s: %(message)s')
     try:
         logging.getLogger().addHandler(logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=100000, backupCount=10))
     except IOError as e:
@@ -310,11 +310,11 @@ def parse_config(confdir):
         return True
     
     def _valid_repopattern(pattern):
-        if pattern.endswith('**'):
+        if pattern.endswith('/**'):
             pattern = pattern[:-2]
-        elif pattern.endswith('*'):
+        elif pattern.endswith('/*'):
             pattern = pattern[:-1]
-        if pattern.startswith('.') or pattern.find('/.') != -1:
+        if (pattern[0] != '/') or pattern.find('/.') != -1:
             return False
         if pattern.find('*') != -1:
             return False
@@ -637,6 +637,9 @@ def sanitize_path(unsanitized_path, create_needed):
         unsan_path_abs = os.path.abspath(root + '/' + unsanitized_path).rstrip('/')
     else:
         unsan_path_abs = os.path.abspath(unsanitized_path).rstrip('/')
+        
+    if unsan_path_abs.find('/.') != -1:
+        return (False, '')
 
     if not create_needed:
         # now, the path must already exist and point to a 
@@ -684,8 +687,10 @@ def sanitize_path(unsanitized_path, create_needed):
 def find_matching_repopatterns(path):
     """ returns a list of repopatterns that match path, in order of match exactness """
     def _patprefix(pat):
-        while pat != '' and pat[len(pat)-1] in '*' + os.sep:
-            pat = pat[:-1]
+        if pat.endswith('/**'):
+            return pat[:-3]
+        if pat.endswith('/*'):
+            return pat[:-2]
         return pat
         
     def _cmpbylen(a, b):
@@ -695,32 +700,41 @@ def find_matching_repopatterns(path):
             return len(a)-len(b)
         return len(ppb)-len(ppa)
     
+    def _ispathprefix(path, prefix):
+        if not path.startswith(prefix):
+            return False
+        if len(path) == len(prefix):
+            return True
+        return '/' == path[len(prefix)]
+
     def _match_repopat_to_path(repopat, path):
         # debug("matching repopat " + repr(repopat) + " to path " + repr(path))
         if repopat.endswith('/**'):
             prefix = repopat[:-3]
-            return path.startswith(prefix)
+            return _ispathprefix(path, prefix)
         if repopat.endswith('/*'):
             prefix = repopat[:-2]
-            if not path.startswith(prefix):
+            if not _ispathprefix(path, prefix):
                 return False
             if path == prefix:
                 return True
-            pathsuffix = path[len(prefix):].strip('/')
+            if len(prefix) + 2 > len(path):
+                return False
+            if path[len(prefix)] != '/': 
+                return False
+            pathsuffix = path[len(prefix)+1:]
             if pathsuffix == '' or '/' in pathsuffix:
                 return False
             return True
         return repopat == path
 
     repopatlist = list(config.accessdict.keys())
-    repopatlist.sort(cmp=_cmpbylen)
     # debug("find_matching_repopatterns: repopatlist: " +
     # repr(repopatlist) + ' path: ' + repr(path))
     retlist = []
     for repopat in repopatlist:
-        extended_repopat = os.path.normpath(config.paths['repopath'] + repopat)
-        # debug("find_matching_repopatterns: repopat: " +
-        # repr(repopat) + " ext_rp: " + repr(extended_repopat))
+        extended_repopat = os.path.normpath(config.paths['repopath'] + '/' + repopat).rstrip('/')
+        # extended_repopat and path both have no redundant or trailing slashes
         if _match_repopat_to_path(extended_repopat, path):
             retlist.append(repopat)
     retlist.sort(cmp=_cmpbylen)
