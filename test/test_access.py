@@ -61,6 +61,8 @@ u6 =
   'foo/n2'     : hgrccontent('u4, u5, u6', 'u4, u5'),
   'foo/n2/n2n1': hgrccontent('u4, u6', 'u4'),
   'foo/n2/n2n2': hgrccontent('u4', 'u4'),
+  'fooo'       : hgrccontent('', ''),
+  'foo/n22'    : hgrccontent('u4, u5', 'u4, u5'),
 }
     confdir = playground + '/confick'
     execCmd([testdict['mkconfrepo'],  confdir])
