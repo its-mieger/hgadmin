@@ -29,8 +29,14 @@ def usage(name):
   prints the pattern from the configuration that matches PATH
 {n} [-D] [--confdir DIR] listusers
   lists all users
+{n} [-D] [--confdir DIR] listgroups
+  lists all groups
+{n} [-D] [--confdir DIR] listusersingroup GROUP
+  lists all users in group GROUP, if it exists
 {n} [-D] [--confdir DIR] showunmanagedrepos
   prints a list of all unmanaged repositories
+{n} [-D] [--confdir DIR] showrepos
+  prints a list of all managed repositories
 {n} [-D] [--confdir DIR] make_repo_managed REPO
   converts repository REPO to a managed repository.
 The configuration directory defaults to "~/hgadmin-config", which can be overridden 
@@ -50,7 +56,7 @@ def main():
     global config
     global configDir
     global _DEBUG
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
     try:
         logging.getLogger().addHandler(logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=100000, backupCount=10))
     except IOError as e:
@@ -120,10 +126,24 @@ def main():
             print(False)
             exit(1)  
     elif len(sys.argv) == 2 and sys.argv[1] == "listusers":
-        print(config.userlist)
+        for u in config.userlist:
+            print(u)
+        exit(0)
+    elif len(sys.argv) == 2 and sys.argv[1] == "listgroups":
+        for u in config.groupdict:
+            print(u)
+        exit(0)
+    elif len(sys.argv) == 3 and sys.argv[1] == "listusersingroup":
+        if not sys.argv[2] in config.groupdict:
+            fail("unknown group")
+        for u in config.groupdict[sys.argv[2]]:
+            print(u)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "showunmanagedrepos":
         print(list_all_repos(list_unmanaged=True))
+        exit(0)
+    elif len(sys.argv) == 2 and sys.argv[1] == "showrepos":
+        print(list_all_repos(list_unmanaged=False))
         exit(0)
     else:
         usage(sys.argv[0])
@@ -132,7 +152,7 @@ def main():
 def fail(msg):
     """helper function in case of catastrophic error"""
     logging.error(msg)
-    print "failure:", msg
+    sys.stderr.write("failure: " + msg + "\n")
     exit(1)
 
 
