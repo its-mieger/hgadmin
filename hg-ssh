@@ -18,11 +18,12 @@ allowcreate = True
 # comment.
 ######################################################################
 
+
 def main():
     repodir, user, confdir = extractargs()
     cmd, repo = parse_cmd(repodir)
     if cmd == "serve":
-        serve_impl(user,repo)
+        serve_impl(user,repo, repodir)
     elif cmd == "create":
         create_impl(user,repo, confdir)
     else:
@@ -70,8 +71,8 @@ def parse_cmd(repodir):
     repo = os.path.abspath(repo)
     return (cmd, repo)
 
-def serve_impl(user, repo):
-    if not is_managed_path(repo):
+def serve_impl(user, repo, repodir):
+    if not is_managed_path(repo, repodir):
         fail("path contains no managed repository")
     from mercurial import demandimport; demandimport.enable()
     from mercurial import dispatch
@@ -101,12 +102,13 @@ def create_impl(user, repo, confdir):
     exit(0)
 
 
-def is_managed_path(path):
-    # we could check whether the path is relative to the directory
-    # with managed repositories.  however, that would require finding
-    # and parsing the configuration file and messing around with real
-    # paths (after eliminating symlinks etc.)  this check should be
-    # entirely sufficient.
+def is_managed_path(path, repodir):
+    dirpart = os.path.dirname(path)
+    if not os.path.exists(dirpart):
+        return False
+    realdirpart = os.path.realpath(dirpart)
+    if not realdirpart.startswith(repodir):
+        return False
     return os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
     
 def allow_access(repo, user):
