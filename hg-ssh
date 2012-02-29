@@ -8,7 +8,7 @@ import sys, os, re, subprocess
 ######################################################################
 
 # Set to True to enable debugging 
-debug = False
+Debug = False
 
 # Set to False to disallow repository creation via SSH
 allowcreate = True
@@ -22,6 +22,9 @@ allowcreate = True
 def main():
     repodir, user, confdir = extractargs()
     cmd, repo = parse_cmd(repodir)
+    debug("repodir: " + repr(repodir) + " user: " + repr(user) \
+              + " confdir: " + repr(confdir) + " cmd: " + repr(cmd) \
+              + " repo: " + repr(repo))
     if cmd == "serve":
         serve_impl(user,repo, repodir)
     elif cmd == "create":
@@ -38,8 +41,13 @@ def fail(message):
     sys.stderr.write("hgadmin: %s\n" % message)
     sys.exit(-1)
 
+def debug(msg):
+    if Debug:
+        sys.stderr.write("hg-ssh debug: " + msg + "\n")
+
 def parse_cmd(repodir):
     origcmd = os.environ.get('SSH_ORIGINAL_COMMAND', None)
+    debug("original command: " + repr(origcmd))
     if origcmd == None:
         fail("started directly")
 
@@ -87,13 +95,11 @@ def serve_impl(user, repo, repodir):
     if not writeaccess:
         rqlist += ['--config', 'hooks.prechangegroup=false', \
                        '--config', 'hooks.pretxnchangegroup=false']
-    if debug:
-        fail("success: " + repr(rqlist))
+    debug("success: " + repr(rqlist))
     dispatch.dispatch(request(rqlist))
 
 def create_impl(user, repo, confdir):
-    if debug:
-        fail("success: " + repr(["hgadmin", "--confdir", confdir, "maybe_create_repo", user, repo]))
+    debug("success: " + repr(["hgadmin", "--confdir", confdir, "maybe_create_repo", user, repo]))
     if not allowcreate:
         fail("repository creation deactivated")
     retv = subprocess.call(["hgadmin", "--confdir", confdir, "maybe_create_repo", user, repo])
@@ -107,7 +113,8 @@ def is_managed_path(path, repodir):
     if not os.path.exists(dirpart):
         return False
     realdirpart = os.path.realpath(dirpart)
-    if not realdirpart.startswith(repodir):
+    realrepodir = os.path.realpath(repodir)
+    if not realdirpart.startswith(realrepodir):
         return False
     return os.access(path + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
     
