@@ -180,7 +180,7 @@ The main configuration file is "/home/hg/hgadmin-config/config":
 >   sshauthkeyspath = /home/hg/.ssh/authorized_keys
 >   
 >   [groups]
->   group1 = user1, user2
+>   group1 = user4, user5
 >   group2 = user2, user3, user4
 >   
 >   [users]
@@ -209,19 +209,29 @@ The access configuration is at "/home/hg/hgadmin-config/access":
 >   [/sandbox/foo]
 >   user1 = r
 >   user4 = rw 
+>   user3 = 
+>   @group1 = rw
+>   user5 = r
 
 In this configuration, presume there are three repositories:
   (a) "/var/repos/test"
   (b) "/var/repos/sandbox/bar"
   (c) "/var/repos/sandbox/foo" 
 
+Access rights for a particular user to some repository are taken from
+the pattern that most closestly matches the repository path and
+mentions the user (or a group he is in). If a user and a group he is
+in are mentioned, the user will get all rights specified.
+
+Therefore:
+
 (a) can be read by user1 and user2, and written by user1.  
 
 (b) can be read by user1, user2, user3 and user4. it can be written by
 user1, user2 and user3.
 
-(c) can be read by user1, user2 and user4. It can be written by user4,
-user3 and user2, but not by user1.
+(c) can be read by user1, user2, user4 and user5. It can be written by
+user2, user4 and user5, but not by user1 or user3.
 
 'hgrc' file:
 ____________
@@ -298,14 +308,51 @@ A configuration section must start with '/'. It is interpreted
 relative to the path configured in the 'repopath' setting in the
 'config'-file.
 
-If a name ends with two '*' characters, it is a wildcard referring to
-everything below this directory down to arbitrary depth.
+If a name ends with '/**', it is a wildcard referring to this
+directory and every directory below it down to arbitrary depth.
 
-If a name ends with a single '*' character, it is a wildcard referring to
-everything immediately inside this directory.
+If a name ends with a '/*', it is a wildcard referring to
+this directory and everything immediately inside it.
 
 If a name does not end with a '*' character, it directly and
 immediately refers to a repository.
+
+The values of one configuration section are the access rights granted
+to users.
+
+The syntax (as seen above) is:
+ 
+  [/some/repo/wildcard/*]
+  USER = ACCESSRIGHTS
+  @GROUP = ACCESSRIGHTS
+
+where USER is a (valid) user name, GROUP is a (valid) group name, and
+ACCESSRIGHTS is either empty or one of the following strings: 'r',
+'rw' or 'rwC'.  
+  - The empty string means that the user or group has no rights.
+  - 'r' means read access (i.e. the user or group is allowed to pull
+    from the repository)
+  - 'rw' means read and write access, i.e. the user or group is
+    allowed to pull from and to push to the repository
+  - 'rwC' means read/write/create access, i.e. the user or group is
+    allowed to pull from and push to the repository, and allowed to
+    create new repositories).
+
+This means that 'rw' implies 'r', and 'rwC' implies 'rw'. 
+
+Leading or trailing whitespace is ignored when interpreting
+ACCESSRIGHTS.
+
+When determining access rights to a repository, the sections are
+examined in order from best match to worst match.
+
+The first section that mentions either the user or a group that
+contains the user is used to determine access rights; no further
+sections are examined.
+
+When this section mentions a user and one or more groups that contain
+that user, the user has all the access rights specified for himself
+and the groups that contain him.
 
 'hgrc' file:
 ____________
@@ -426,8 +473,8 @@ configuration and create a repository.
 
 If called like 'hgadmin updateauth' it will read its configuration,
 and refresh access configuration; i.e. it will regenerate and update
-the htpasswd-file, the authorized_keys file and every repository
-configuration file.
+the authorized_keys file and every repository configuration file, and
+replace the htpasswd-file.
 
 If called like 'hgadmin verify', it will read the configuration, and
 exit successfully if the configuration is valid. If the configuration
