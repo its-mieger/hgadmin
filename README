@@ -281,13 +281,21 @@ The section 'paths' has six possible settings:
   - 'htpasswdpath' -- path to the htpasswdfile, if present
   - 'sshauthkeyspath' -- path to the authorized_keys file
   - 'hg-ssh' -- path to the hg-ssh script
+  - 'additionalusersfile' -- file containing a comma-separated list of additional users
+  - 'additionalgroupsfile' -- file containing additional groups
 
-The section 'users' has exactly one setting, named 'users'.
-Its value is a comma separated list of the users.
+The section 'users' has exactly one setting, named 'users'.  Its value
+is a comma separated list of the users. The users specified in
+'additionalusersfile' are added to the list of users.
 
 The section 'groups' contains the groups. A groupname is encoded in
 the name of a setting; the users belonging to the group end up in the
-value of the setting.
+value of the setting. The groups specified in 'additionalgroupsfile'
+are added to these groups. 'additionalgroupsfile' contains one or more
+lines consisting of:
+       GROUPNAME = USERLIST
+where GROUPNAME is the name of the group and USERLIST is a
+comma-separated list of members of the group.
 
 If the "htpasswdpath" option is not specified, hgadmin will not update
 it. Likewise, if either the "hg-ssh" option or the "sshauthkeyspath"
