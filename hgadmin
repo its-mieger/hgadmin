@@ -381,17 +381,24 @@ def parse_config(confdir):
             else:
                 prefix = 'user'
                 realname = userorgroup
-            if 'r' in accesstype:
+            ats = accesstype.strip()
+            if ats == 'r':
                 accessdict[path][prefix]["read"].append(realname)
-            if 'w' in accesstype:
+            elif ats == 'rw':
                 accessdict[path][prefix]["write"].append(realname)
                 accessdict[path][prefix]["read"].append(realname)
-            if 'C' in accesstype:
+            elif ats == 'rwC':
                 accessdict[path][prefix]["create"].append(realname)
                 accessdict[path][prefix]["write"].append(realname)
                 accessdict[path][prefix]["read"].append(realname)
-            if accesstype.strip() == '':
+            elif ats == '':
+                # side effect: user is mentioned in this pattern
                 accessdict[path][prefix]["deny"].append(realname)
+            else:
+                warn(("access file section [%s] at %s: invalid setting, " \
+                          + "defaulting to DENY") % (path, userorgroup))              
+                accessdict[path][prefix]["deny"].append(realname)
+
     # now some sanity checks:
     for u in userlist:
         if not _valid_name(u):
@@ -755,6 +762,7 @@ def allow_access(accesstype, user, patterns):
             if g in config.accessdict[p]['group'][accesstype]:
                 debug("allow_access: Success, pattern: " + repr(p))
                 return True
+        # if user is mentioned in this pattern (for a different access type), deny him.
         for g in glist:
             for at in config.accessdict[p]['group']:
                 if g in config.accessdict[p]['group'][at]:

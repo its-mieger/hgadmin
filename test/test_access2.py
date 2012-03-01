@@ -49,6 +49,7 @@ users = u1, u2, u3, u4, u5, u6
 u3 = rw
 [/foo/n1/n1n1]
 u1 = r
+u6 = wrx
 """
 }
     repodict = {
