@@ -44,12 +44,25 @@ def fail(message):
     print("test " + _name + " failed: " + message)
     exit(1)
 
-def execCmd(cmd, expectFailure = False, errMsg = None):
+def execCmd(cmd, expectFailure = False):
     x = subprocess.call(cmd)
     if (x != 0 and not expectFailure) or (x == 0 and expectFailure):
-        if errMsg == None:
-            if expectFailure:
-                errMsg = "command %s didn't fail" % repr(cmd)
-            else:
-                errMsg = "command %s failed" % repr(cmd)
+        if expectFailure:
+            errMsg = "command %s didn't fail" % repr(cmd)
+        else:
+            errMsg = "command %s failed" % repr(cmd)
         fail(errMsg)
+
+def execCmdWithOutput(cmd, expectFailure = False):
+    retv = 0
+    try:
+        x = subprocess.check_output(cmd)
+    except subprocess.CalledProcessError as e:
+        retv = e.returncode
+    if (retv != 0 and not expectFailure) or (retv == 0 and expectFailure):
+        if expectFailure:
+            errMsg = "command %s didn't fail" % repr(cmd)
+        else:
+            errMsg = "command %s failed" % repr(cmd)
+        fail(errMsg)
+    return x

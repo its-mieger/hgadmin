@@ -126,24 +126,26 @@ def main():
             print(False)
             exit(1)  
     elif len(sys.argv) == 2 and sys.argv[1] == "listusers":
-        for u in config.userlist:
+        for u in sorted(config.userlist):
             print(u)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "listgroups":
-        for u in config.groupdict:
-            print(u)
+        for g in sorted(config.groupdict):
+            print(g)
         exit(0)
     elif len(sys.argv) == 3 and sys.argv[1] == "listusersingroup":
         if not sys.argv[2] in config.groupdict:
             fail("unknown group")
-        for u in config.groupdict[sys.argv[2]]:
+        for u in sorted(config.groupdict[sys.argv[2]]):
             print(u)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "showunmanagedrepos":
-        print(list_all_repos(list_unmanaged=True))
+        for y in sorted(list_all_repos(list_unmanaged=True)):
+            print(y)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "showrepos":
-        print(list_all_repos(list_unmanaged=False))
+        for y in sorted(list_all_repos(list_unmanaged=False)):
+            print(y)
         exit(0)
     else:
         usage(sys.argv[0])
@@ -363,10 +365,69 @@ def parse_config(confdir):
     paths['globalhgrc']      = os.path.join(confdir, 'hgrc')
     paths['sshkeydir']       = os.path.join(confdir, 'keys')
     paths['managedhtpwd']    = os.path.join(confdir, 'htpasswd')
+    for option in ['additionalusersfile', 'additionalgroupsfile']:
+        if configContent.has_option('paths', option):
+            x = os.path.expanduser(configContent.get('paths', option))
+            paths[option] = os.path.join(confdir, x)
     for group in configContent.options('groups'):
         groupdict[group] = _splitoption(configContent.get('groups', group)) 
     userlist = _splitoption(configContent.get('users', 'users'))
-
+    if 'additionalusersfile' in paths:
+        x = None
+        try:
+            x = open(paths['additionalusersfile'], "r").read()
+            addul      = [ y.strip() for y in x.rstrip().rstrip(',').split(',') ]
+            validaddul = [ y for y in addul if _valid_name(y) ]
+            if len(validaddul) == len(addul):
+                debug("adding users: " + repr(addul))
+                userlist += addul
+            else:
+                confError = True
+                warn("addtionalusersfile contains invalid users, ignoring it")
+        except Exception as e:
+            confError = True
+            warn("could not read addtionalusersfile: " + repr(e))
+    if 'additionalgroupsfile' in paths:
+        # print("auf")
+        try:
+            tmpgd = {}
+            allvalid = True
+            fd = open(paths['additionalgroupsfile'], "r")
+            for line in fd.readlines():
+                if line.strip() == '':
+                    continue # ignore lines with only whitespace
+                spline = line.split('=')
+                if len(spline) != 2:
+                    confError = True
+                    warn("addtionalgroupsfile contains invalid entry, ignoring it")
+                    continue
+                addgroupname = spline[0].strip()
+                if not _valid_name(addgroupname):
+                    confError = True
+                    warn("addtionalgroupsfile contains invalid group %s, ignoring it" % addgroupname)
+                    continue
+                adduserlist      = [ u.strip() for u in spline[1].rstrip().rstrip(',').split(',') ]  
+                validadduserlist = [ u for u in adduserlist if _valid_name(u) ]
+                debug("aul: " + repr(adduserlist) + " " + repr(validadduserlist))
+                if len(validadduserlist) != len(adduserlist) and spline[1].strip() != '':
+                    confError = True
+                    warn("addtionalgroupsfile group %s contains invalid users, ignoring group" % addgroupname)
+                    continue
+                if addgroupname in tmpgd:
+                    confError = True
+                    warn("addtionalusersfile contains group %s twice, ignoring second occurrence" % addgroupname)
+                    continue
+                tmpgd[addgroupname] = validadduserlist
+            debug("adding groups: " + repr(tmpgd))
+            for g in tmpgd:
+                if g in groupdict:
+                    confError = True
+                    warn("addtionalusersfile contains already defined group %s, ignoring group" % g)
+                    continue
+                groupdict[g] = tmpgd[g]
+        except Exception as e:
+            confError = True
+            warn("could not read addtionalgroupsfile: " + repr(e))
     accessdict = {}
     for path in accessContent.sections():
         accessdict.setdefault(path, {})
