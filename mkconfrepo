@@ -167,7 +167,6 @@ conffiles["hook-examples"] = """# example hook configurations
 """
 
 conffiles["hgrc"] = """# sample hgrc to be included in every managed repo
-# Note that you must not include a [web] section in here!
 """
 
 conffiles["README"] = """This is a hg repository containing configuration information for hgadmin.
