@@ -335,9 +335,10 @@ The syntax (as seen above) is:
   @GROUP = ACCESSRIGHTS
 
 where USER is a (valid) user name, GROUP is a (valid) group name, and
-ACCESSRIGHTS is either empty or one of the following strings: 'r',
-'rw' or 'rwC'.  
-  - The empty string means that the user or group has no rights.
+ACCESSRIGHTS is either empty or one of the following strings: 'deny',
+'r', 'rw' or 'rwC'.
+  - 'deny' and the empty string both mean that the user or group has
+    no rights.
   - 'r' means read access (i.e. the user or group is allowed to pull
     from the repository)
   - 'rw' means read and write access, i.e. the user or group is

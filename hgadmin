@@ -452,7 +452,7 @@ def parse_config(confdir):
                 accessdict[path][prefix]["create"].append(realname)
                 accessdict[path][prefix]["write"].append(realname)
                 accessdict[path][prefix]["read"].append(realname)
-            elif ats == '':
+            elif ats == '' or ats == 'deny':
                 # side effect: user is mentioned in this pattern
                 accessdict[path][prefix]["deny"].append(realname)
             else:
