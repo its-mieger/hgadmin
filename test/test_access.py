@@ -34,7 +34,7 @@ g1 = u1, u2
 g2 = u1, u3
 
 [users]
-users = u1, u2, u3, u4, u5, u6
+users = u1, u2, u3, u4, u5, u6, u7
 """ % (playground + '/repos'), 
         'access':
 """# now, something to test...
@@ -48,8 +48,10 @@ u4 = rw
 u4 = r
 [/foo/n2/*]
 u6 = r
+u7 = r
 [/foo/n2/n2n2]
 u6 = 
+u7 = deny
 """
 }
     repodict = {
@@ -58,8 +60,8 @@ u6 =
   'foo/n1'     : hgrccontent('u4, u5', 'u4, u5'),
   'foo/n1/n1n1': hgrccontent('u4', ''),
   'foo/n1/n1n2': hgrccontent('u4', 'u4'),
-  'foo/n2'     : hgrccontent('u4, u5, u6', 'u4, u5'),
-  'foo/n2/n2n1': hgrccontent('u4, u6', 'u4'),
+  'foo/n2'     : hgrccontent('u4, u5, u6, u7', 'u4, u5'),
+  'foo/n2/n2n1': hgrccontent('u4, u6, u7', 'u4'),
   'foo/n2/n2n2': hgrccontent('u4', 'u4'),
   'fooo'       : hgrccontent('', ''),
   'foo/n22'    : hgrccontent('u4, u5', 'u4, u5'),
