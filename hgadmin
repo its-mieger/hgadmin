@@ -509,8 +509,15 @@ def parse_config(confdir):
     retval.paths = paths
     return retval
 
-def replacefile(targetpath, newsuffix, backupsuffix):
+def gentmpsuffix():
+    return "_tmp-" + str(os.getpid())
+
+def genbaksuffix():
+    return "_bak-" + str(os.getpid())
+
+def replacefile(targetpath, newsuffix):
     """helper function to atomically replace a file while keeping a backup"""
+    backupsuffix = genbaksuffix()
     b = targetpath + backupsuffix
     n = targetpath + newsuffix
     targetpresent = True
@@ -540,7 +547,9 @@ def gen_hgrc(repo):
     """creates a hgrc file for a managed repository, with web access information"""
     globalhgrcprefix = config.paths['globalhgrc']
     debug("gen_hgrc: " + repr(repo))
-    tmppath = repo +"/.hg/hgrc_tmp"
+    tmpsuff = gentmpsuffix()
+    tgtpath = repo +"/.hg/hgrc"
+    tmppath = tgtpath + tmpsuff
     tmpfile = open(tmppath, "w")
     if os.access(globalhgrcprefix, os.R_OK):
         tmpfile.write("\n%include " + globalhgrcprefix)
@@ -583,7 +592,7 @@ def gen_hgrc(repo):
             sep = ', '
         tmpfile.write("\n")
     closefd(tmpfile)
-    replacefile(repo+"/.hg/hgrc", "_tmp", "_bak")
+    replacefile(tgtpath, tmpsuff)
 
 def valid_sshkey(x):
     """helper function to determine whether a string is a ssh key"""
@@ -631,7 +640,8 @@ def gen_authkeys():
     userlist = config.userlist
     keydir = config.paths['sshkeydir']
     authkeypath = config.paths['sshauthkeyspath']
-    tmppath = authkeypath +"_tmp"
+    tmpsuff = gentmpsuffix()
+    tmppath = authkeypath + tmpsuff
     predefpath = authkeypath +"_const"
     os.umask(077)
     tmpfile = open(tmppath, "w")
@@ -664,7 +674,7 @@ def gen_authkeys():
                                   + configDir + ' " ' + key + '\n')
     closefd(tmpfile)
     
-    replacefile(authkeypath, "_tmp", "_bak")
+    replacefile(authkeypath, tmpsuff)
 
 def update_htpasswd():
     """replaces system htpasswd file with htpasswd file from configuration directory"""
@@ -675,10 +685,11 @@ def update_htpasswd():
     newfile = config.paths['managedhtpwd']
     if os.path.exists(newfile):
         os.umask(033)
-        x = open(tochange+"_tmp", "w")
+        tmpsuff = gentmpsuffix()
+        x = open(tochange+tmpsuff, "w")
         x.write(open(newfile, "r").read())
         closefd(x)
-        replacefile(tochange, "_tmp", "_bak")
+        replacefile(tochange, tmpsuff)
 
 
 
