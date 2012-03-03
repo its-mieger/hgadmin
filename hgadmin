@@ -109,10 +109,13 @@ def main():
             exit(1)
         exit(0)
     elif len(sys.argv) == 5 and sys.argv[1] == "accesscheck":
-        flag, p = sanitize_path(sys.argv[4], create_needed = False)
-        repopatlist = find_matching_repopatterns(p)
+        accesstype = sys.argv[2]
+        user = sys.argv[3]
+        unsan_path = sys.argv[4]
+        flag, p = sanitize_path(unsan_path, create_needed = False)
         if flag:
-            print(allow_access(sys.argv[2], sys.argv[3], repopatlist))
+            repopatlist = find_matching_repopatterns(p)
+            print(user in gen_accesssets(repopatlist)[accesstype])
             exit(0)  
         else:
             print(False)
@@ -210,7 +213,7 @@ def gen_repo(user, unsanitized_repopath):
     if not user in config.userlist:
         fail("unknown user")
     repopatlist = find_matching_repopatterns(sane_path)
-    if not allow_access("create", user, repopatlist):
+    if not user in gen_accesssets(repopatlist)["create"]:
         fail("access denied")
     gen_repo_nocheck(sane_path)
 
@@ -480,28 +483,46 @@ def parse_config(confdir):
                 confError = True
                 groupdict[g].remove(u)
     todelete = []
-    for repo in accessdict:
-        if not _valid_repopattern(repo):
-            warn('repo pattern %s is invalid' % repo)
+    for pattern in accessdict:
+        if not _valid_repopattern(pattern):
+            warn('repo pattern %s is invalid' % pattern)
             confError = True
-            todelete.append(repo)
+            todelete.append(pattern)
             continue
-        for ug in accessdict[repo]:
-            for accesstype in accessdict[repo][ug]:
-                for userorgroup in accessdict[repo][ug][accesstype]:
-                    # debug("debug_foo:" +" "+ repo + ' ' + userorgroup +' '+ ug)
+        for ug in accessdict[pattern]:
+            for accesstype in accessdict[pattern][ug]:
+                for userorgroup in accessdict[pattern][ug][accesstype]:
+                    # debug("debug_foo:" +" "+ pattern + ' ' + userorgroup +' '+ ug)
                     if ug == 'user' and not userorgroup in userlist:
                         confError = True
                         warn("repo access to %s refers to undefined user %s" \
-                                 % (repo, userorgroup))
-                        accessdict[repo][ug][accesstype].remove(userorgroup)
+                                 % (pattern, userorgroup))
+                        accessdict[pattern][ug][accesstype].remove(userorgroup)
                     if ug == 'group' and not userorgroup in groupdict:
                         confError = True
                         warn("repo access to %s refers to undefined group %s" \
-                                 % (repo, userorgroup))
-                        accessdict[repo][ug][accesstype].remove(userorgroup)
+                                 % (pattern, userorgroup))
+                        accessdict[pattern][ug][accesstype].remove(userorgroup)
     for t in todelete:
         del accessdict[t]
+    debug("flattening groups")
+    for pattern in accessdict:
+        rset = set(accessdict[pattern]["user"]["read"])
+        wset = set(accessdict[pattern]["user"]["write"])
+        dset = set(accessdict[pattern]["user"]["deny"])
+        cset = set(accessdict[pattern]["user"]["create"])
+        for group in accessdict[pattern]["group"]["read"]:
+            rset.update(groupdict[group])
+        for group in accessdict[pattern]["group"]["write"]:
+            wset.update(groupdict[group])
+        for group in accessdict[pattern]["group"]["create"]:
+            cset.update(groupdict[group])
+        for group in accessdict[pattern]["group"]["deny"]:
+            dset.update(groupdict[group])
+        accessdict[pattern]["read"]   = frozenset(rset)
+        accessdict[pattern]["write"]  = frozenset(wset)
+        accessdict[pattern]["create"] = frozenset(cset)
+        accessdict[pattern]["deny"]   = frozenset(dset)
     retval = confobj()
     retval.userlist = userlist
     retval.groupdict = groupdict
@@ -563,14 +584,9 @@ def gen_hgrc(repo):
     readlist = set()
     writelist = set()
     repopatlist = find_matching_repopatterns(repo)
-    for user in config.userlist:
-        if allow_access("read", user, repopatlist):
-            readlist.add(user)
-        if allow_access("write", user, repopatlist):
-            writelist.add(user)
-            readlist.add(user)
-    readlist = sorted(readlist)
-    writelist = sorted(writelist)
+    repoaccessdict = gen_accesssets(repopatlist)
+    readlist = sorted(repoaccessdict["read"].union(repoaccessdict["write"]))
+    writelist = sorted(repoaccessdict["write"])
     debug("gen_hgrc: readlist " + repr(readlist))
     debug("gen_hgrc: writelist " + repr(writelist))
     if len(readlist) == 0: 
@@ -821,31 +837,27 @@ def find_matching_repopatterns(path):
     return retlist
 
     
-def allow_access(accesstype, user, patterns):
-    """returns True iff user is allowed access "accesstype" according to the specified patterns"""
-    debug("allow_access patterns: " + repr(patterns) + " user: " + repr(user) \
-              + " accesstype: " + repr(accesstype))
-    for p in patterns:
-        if user in config.accessdict[p]['user'][accesstype]:
-            debug("allow_access: Success, pattern: " + repr(p))
-            return True
-        glist = [ x for x,y in config.groupdict.items() if user in y ]
-        for g in glist:
-            if g in config.accessdict[p]['group'][accesstype]:
-                debug("allow_access: Success, pattern: " + repr(p))
-                return True
-        # if user is mentioned in this pattern (for a different access type), deny him.
-        for g in glist:
-            for at in config.accessdict[p]['group']:
-                if g in config.accessdict[p]['group'][at]:
-                    debug("allow_access: Failure, pattern: " + repr(p))
-                    return False
-        for at in config.accessdict[p]['user']:
-            if user in config.accessdict[p]['user'][at]:
-                debug("allow_access: Failure, pattern: " + repr(p))
-                return False
-    debug("allow_access: Failure, no pattern")
-    return False
+
+def gen_accesssets(patterns):
+    rset = set()
+    wset = set()
+    cset = set()
+    dset = set()
+    unknown = set(config.userlist)
+    for x in patterns:
+        p = config.accessdict[x]
+        rset.update(p["read"  ].intersection(unknown))
+        wset.update(p["write" ].intersection(unknown))
+        cset.update(p["create"].intersection(unknown))
+        dset.update(p["deny"  ].intersection(unknown))
+        unknown.difference_update(p["read"], p["write"], p["create"], p["deny"])
+        debug("accessets: pattern: " + x + " sets: " \
+                  + repr({"read": rset, "write": wset, "create": cset, 
+                          "deny": dset, "unknown" : unknown}))
+        if len(unknown) == 0:
+            break
+    dset.update(unknown)
+    return {"read": rset, "write": wset, "create": cset, "deny": dset}
 
 if __name__ == "__main__":
     main()
