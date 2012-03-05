@@ -497,6 +497,12 @@ repository located at PATH.
 All these invocations share these options:
   - "-D"            - enables debugging output
   - "--confdir DIR" - sets configuration directory to DIR
+
+All files changed by hgadmin are first written to a temporary file,
+then renamed to the real file. hgadmin does a fdatasync() before the
+rename, which makes it kind of slow (~10 times slower). If you know
+that fdatasync before rename is unnecessary on your filesystem,
+comment out the fdatasync call. However, don't complain if you lose data...
 	
 mkconfrepo
 ~~~~~~~~~~
