@@ -40,7 +40,7 @@ def usage(name):
 {n} [-D] [--confdir DIR] make_repo_managed REPO
   converts repository REPO to a managed repository.
 The configuration directory defaults to "~/hgadmin-config", which can be overridden 
-by setting the environment variable "HGADMIN-CONFREPO" or using the "--confdir" option.
+by setting the environment variable "HGADMIN_CONFREPO" or using the "--confdir" option.
 The "-D" option enables the (rather verbose) debugging output.
 """ 
     print(x.format(n=name))
@@ -62,7 +62,7 @@ def main():
     except IOError as e:
         warn('unable to open log file ' + repr(LOGFILE))
     x = BASEDIR
-    x = os.getenv("HGADMIN-CONFREPO", x)
+    x = os.getenv("HGADMIN_CONFREPO", x)
     foundArg = True
     while foundArg:
         foundArg = False
