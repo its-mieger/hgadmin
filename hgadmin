@@ -348,8 +348,10 @@ def parse_config(confdir):
         accessfd = open(accessFile)
         conffd = open(confFile)
         configContent = ConfigParser.RawConfigParser()
+        configContent.optionxform = str
         configContent.readfp(conffd)
         accessContent = ConfigParser.RawConfigParser()
+        accessContent.optionxform = str
         accessContent.readfp(accessfd)
         conffd.close()
         accessfd.close()
