@@ -8,7 +8,7 @@ import sys, os, re, subprocess
 ######################################################################
 
 # Set to True to enable debugging 
-Debug = False
+Debug = True
 
 # Set to False to disallow repository creation via SSH
 allowcreate = True
@@ -18,6 +18,12 @@ allowcreate = True
 # comment.
 ######################################################################
 
+DebugFD = sys.stderr
+
+try:
+    DebugFD = open("/var/log/hgadmin/hg-ssh.log", "a")
+except Exception as e:
+    DebugFD = sys.stderr
 
 def main():
     repodir, user, confdir = extractargs()
@@ -43,7 +49,7 @@ def fail(message):
 
 def debug(msg):
     if Debug:
-        sys.stderr.write("hg-ssh debug: " + msg + "\n")
+        DebugFD.write("hg-ssh debug: " + msg + "\n")
 
 def parse_cmd(repodir):
     origcmd = os.environ.get('SSH_ORIGINAL_COMMAND', None)

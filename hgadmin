@@ -213,7 +213,7 @@ def gen_repo_nocheck(sane_path):
 
 def gen_repo(user, unsanitized_repopath):
     """creates a repository, if user is allowed to do"""
-    info("maybe creating repo at " + repr(sane_path))
+    info("maybe creating repo at " + repr(unsanitized_repopath))
     path_ok, sane_path = sanitize_path(unsanitized_repopath, create_needed = True)
     if not path_ok:
         fail("invalid path")
