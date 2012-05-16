@@ -205,6 +205,7 @@ def make_repo_managed(sane_path, save_hgrc = False):
 
 def gen_repo_nocheck(sane_path):
     """creates a managed repository, without any security checks"""
+    info("creating repo at " + repr(sane_path))
     dispatch.dispatch(request(['init', sane_path]))
     make_repo_managed(sane_path)
     info("created repo at " + repr(sane_path))
@@ -212,6 +213,7 @@ def gen_repo_nocheck(sane_path):
 
 def gen_repo(user, unsanitized_repopath):
     """creates a repository, if user is allowed to do"""
+    info("maybe creating repo at " + repr(sane_path))
     path_ok, sane_path = sanitize_path(unsanitized_repopath, create_needed = True)
     if not path_ok:
         fail("invalid path")
@@ -220,7 +222,8 @@ def gen_repo(user, unsanitized_repopath):
     repopatlist = find_matching_repopatterns(sane_path)
     if not user in gen_accesssets(repopatlist)["create"]:
         fail("access denied")
-    gen_repo_nocheck(sane_path)
+    else:
+        gen_repo_nocheck(sane_path)
 
 def update_auth():
     """updates authentication information for all managed repositories, authorized_keys and htpasswd."""
@@ -561,6 +564,7 @@ def replacefile(targetpath, newsuffix):
         else:
             targetpresent = False
     try:
+        sys.stderr.write('.')
         os.rename(n, targetpath)
     except Exception as e:
         os.remove(n)
