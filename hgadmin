@@ -1,12 +1,6 @@
 #! /usr/bin/env python
 
 import ConfigParser, string, sys, os, re, subprocess, stat, shutil, base64, logging, logging.handlers
-from mercurial import ui, hg, dispatch
-
-try:
-    request = dispatch.request
-except AttributeError:
-    request = list 
 
 # directory where hgadmin searches for its configuration
 BASEDIR='~/hgadmin-config'
@@ -206,7 +200,10 @@ def make_repo_managed(sane_path, save_hgrc = False):
 def gen_repo_nocheck(sane_path):
     """creates a managed repository, without any security checks"""
     info("creating repo at " + repr(sane_path))
-    dispatch.dispatch(request(['init', sane_path]))
+    try:
+        subprocess.check_call(['hg', 'init', sane_path])
+    except Exception as e:
+        fail("repository creation failed")
     make_repo_managed(sane_path)
     info("created repo at " + repr(sane_path))
     
