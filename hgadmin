@@ -42,22 +42,16 @@ The "-D" option enables the (rather verbose) debugging output.
 config = None
 configDir = None
 confError = False
-_DEBUG = False
 LOGFILE = "/var/log/hgadmin/hgadmin.log"
 
 def main():
     """main function"""
     global config
     global configDir
-    global _DEBUG
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO, format='%(levelname)s: %(message)s')
-    try:
-        logging.getLogger().addHandler(logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=100000, backupCount=10))
-    except IOError as e:
-        warn('unable to open log file ' + repr(LOGFILE))
     x = BASEDIR
     x = os.getenv("HGADMIN_CONFREPO", x)
     foundArg = True
+    loglevel = logging.INFO
     while foundArg:
         foundArg = False
         if len(sys.argv) >= 3 and sys.argv[1] == "--confdir":
@@ -67,16 +61,16 @@ def main():
             foundArg = True
             continue
         if len(sys.argv) >= 2 and sys.argv[1] == "-D":
-            _DEBUG = True
-            logging.getLogger().setLevel(logging.DEBUG)
+            loglevel = logging.DEBUG
             foundArg = True
             del sys.argv[1]
             continue
         if len(sys.argv) >= 2 and sys.argv[1] == "-q":
-            logging.getLogger().setLevel(logging.WARN)
+            loglevel = logging.WARN
             foundArg = True
             del sys.argv[1]
             continue
+    setuplogging(loglevel)
     configDir = os.path.abspath(os.path.expanduser(x))
     config = parse_config(configDir)
     debug("config: "+ repr(config))
@@ -147,6 +141,21 @@ def main():
     else:
         usage(sys.argv[0])
         exit(1)
+
+def setuplogging(loglevel):
+    logging.getLogger().setLevel(logging.DEBUG)
+    stderrhdlr = logging.StreamHandler(sys.stderr)
+    stderrhdlr.setLevel(loglevel)
+    logging.getLogger().addHandler(stderrhdlr)
+    try:
+        fhd = logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=100000, backupCount=10)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        fhd.setFormatter(formatter)
+        fhd.setLevel(logging.DEBUG)
+        logging.getLogger().addHandler(fhd)
+    except IOError as e:
+        warn('unable to open log file ' + repr(LOGFILE))
+
 
 def fail(msg):
     """helper function in case of catastrophic error"""
@@ -299,11 +308,11 @@ class confobj: # object to save configuration settings
         self.accessdict = None
         self.paths = None
     def __repr__(self):
-        return "config:\n" \
-            + "  userlist: "   + repr(self.userlist) + "\n" \
-            + "  groupdict: "  + repr(self.groupdict) + "\n" \
-            + "  accessdict: " + repr(self.accessdict) + "\n" \
-            + "  paths: "      + repr(self.paths) + "\n" 
+        return "config: {" \
+            + "  'userlist': "   + repr(self.userlist) \
+            + "  'groupdict': "  + repr(self.groupdict)  \
+            + "  'accessdict': " + repr(self.accessdict) \
+            + "  'paths': "      + repr(self.paths) + " }" 
 
 
 def parse_config(confdir):
