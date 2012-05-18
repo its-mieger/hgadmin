@@ -30,14 +30,14 @@ def testhgssh(sshcommand, origcommand, testdict, playground, accessdict, expectF
         os.remove(dumpfile)
     return y
                
-def analyzehgsshtestresult(res, expectedrepo, confDir):
+def analyzehgsshtestresult(res, expectedrepo, confDir, testdict):
     # print res
     if res == None:
         return ""
 
     readstring = "dispatch.dispatch: called on ('mercurial.dispatch.request', ['-R', %s, 'serve', '--stdio', '--config', 'hooks.prechangegroup=false', '--config', 'hooks.pretxnchangegroup=false'])" % repr(expectedrepo)
     writestring = "dispatch.dispatch: called on ('mercurial.dispatch.request', ['-R', %s, 'serve', '--stdio'])" % repr(expectedrepo)
-    createstring = "command line: ['/home/jakob/sw/hgadmin-replacement/test/overrides/hgadmin', '--confdir', %s, 'maybe_create_repo', 'u1', %s]" % (repr(confDir), repr(expectedrepo))
+    createstring = "command line: ['%s/test/overrides/hgadmin', '--confdir', %s, 'maybe_create_repo', 'u1', %s]" % (testdict['masterrepo'], repr(confDir), repr(expectedrepo))
 
     if string.find(res, readstring) != -1:
         return "read"
@@ -120,7 +120,7 @@ u2 =
                 (r15, '/tmp/hgadmin-testdirectory/repos/sub'       , ""),
                 ]
     for anares in analysis:
-        tmp = analyzehgsshtestresult(anares[0], anares[1], confdir)
+        tmp = analyzehgsshtestresult(anares[0], anares[1], confdir, testdict)
         # print tmp
         if tmp != anares[2]:
             fail("hg-ssh invocation broke... " + repr(anares) + " " + repr(tmp))
