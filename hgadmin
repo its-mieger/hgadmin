@@ -72,6 +72,7 @@ def main():
             del sys.argv[1]
             continue
     setuplogging(loglevel)
+    debug("commandline: " + repr(sys.argv))
     configDir = os.path.abspath(os.path.expanduser(x))
     config = parse_config(configDir)
     debug("config: "+ repr(config))
@@ -149,8 +150,8 @@ def setuplogging(loglevel):
     stderrhdlr.setLevel(loglevel)
     logging.getLogger().addHandler(stderrhdlr)
     try:
-        fhd = logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=100000, backupCount=10)
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        fhd = logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=1000000, backupCount=10)
+        formatter = logging.Formatter('%(asctime)s %(process)d %(levelname)s %(message)s')
         fhd.setFormatter(formatter)
         fhd.setLevel(FILELOGLEVEL)
         logging.getLogger().addHandler(fhd)
