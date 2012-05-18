@@ -36,6 +36,7 @@ def gentestdict(testdir):
     d['hgadmin'   ] = tds + '/' + 'hgadmin'   
     d['mkconfrepo'] = tds + '/' + 'mkconfrepo'
     d['masterrepo'] = tds
+    d['playground'] = PLAYGROUND
     return d
 
 def main():
