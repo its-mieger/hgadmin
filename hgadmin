@@ -247,10 +247,12 @@ def list_all_repos(list_unmanaged = False):
     repolist = []
     f = config.paths['repopath']
     for root, dirs, files in os.walk(f, topdown=True):
-        f1 = is_managed_repo(root, isAbs=True)
-        if ((f1 and (not list_unmanaged)) \
-                or ((not f1) and list_unmanaged)) :
-            repolist.append(root)
+        if not list_unmanaged:
+            if is_managed_repo(root, isAbs=True):
+                repolist.append(root)
+        else:
+            if is_repo(root, isAbs=True) and not is_managed_repo(root, isAbs=True):
+                repolist.append(root)                
         if '.hg' in dirs: 
             dirs.remove('.hg')
     debug("all repos: " + repr(repolist))
@@ -267,6 +269,18 @@ def is_managed_repo(repo, isAbs=False):
     # debug("is_managed_repopath" + repr(repopath) + " : " + repr(x))
     return x
    
+def is_repo(repo, isAbs=False):
+    """given a path to a repo, returns True iff it actually is a repo"""
+    if isAbs:
+        repopath = repo
+    else:
+        root = config.paths['repopath']
+        repopath = root + '/' + repo
+    x = os.access(repopath + '/.hg/00changelog.i', os.F_OK)
+    # debug("is_repo" + repr(repopath) + " : " + repr(x))
+    return x
+
+
 
 class confobj: # object to save configuration settings
     """singleton object to save configuration settings
