@@ -43,6 +43,7 @@ config = None
 configDir = None
 confError = False
 LOGFILE = "/var/log/hgadmin/hgadmin.log"
+FILELOGLEVEL = logging.DEBUG
 
 def main():
     """main function"""
@@ -151,7 +152,7 @@ def setuplogging(loglevel):
         fhd = logging.handlers.RotatingFileHandler(LOGFILE, maxBytes=100000, backupCount=10)
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         fhd.setFormatter(formatter)
-        fhd.setLevel(logging.DEBUG)
+        fhd.setLevel(FILELOGLEVEL)
         logging.getLogger().addHandler(fhd)
     except IOError as e:
         warn('unable to open log file ' + repr(LOGFILE))
@@ -245,12 +246,10 @@ def list_all_repos(list_unmanaged = False):
     repolist = []
     f = config.paths['repopath']
     for root, dirs, files in os.walk(f, topdown=True):
-        if is_managed_repo(root, isAbs=True):
-            if not list_unmanaged:
-                repolist.append(root)
-        elif is_unmanaged_repo(root, isAbs=True):
-            if list_unmanaged:
-                repolist.append(root)
+        f1 = is_managed_repo(root, isAbs=True)
+        if ((f1 and (not list_unmanaged)) \
+                or ((not f1) and list_unmanaged)) :
+            repolist.append(root)
         if '.hg' in dirs: 
             dirs.remove('.hg')
     debug("all repos: " + repr(repolist))
@@ -264,20 +263,9 @@ def is_managed_repo(repo, isAbs=False):
         root = config.paths['repopath']
         repopath = root + '/' + repo
     x = os.access(repopath + '/.hg/ADMINISTRATED_BY_HGADMIN', os.F_OK)
-    debug("is_managed_repopath" + repr(repopath) + " : " + repr(x))
+    # debug("is_managed_repopath" + repr(repopath) + " : " + repr(x))
     return x
-
-def is_unmanaged_repo(repo, isAbs=False):
-    """given a path to a repo, returns True iff said repository is not managed by hgadmin"""
-    if isAbs:
-        repopath = repo
-    else:
-        root = config.paths['repopath']
-        repopath = root + '/' + repo
-    x = os.access(repopath + '/.hg/00changelog.i', os.F_OK)
-    debug("is_unmanaged_repo" + repr(repopath) + " : " + repr(x))
-    return x
-    
+   
 
 class confobj: # object to save configuration settings
     """singleton object to save configuration settings
@@ -877,5 +865,9 @@ def gen_accesssets(patterns):
     return {"read": rset, "write": wset, "create": cset, "deny": dset}
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        debug("Exception: "+ repr(e))
+        raise e
   

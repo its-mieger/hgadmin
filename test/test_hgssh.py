@@ -123,4 +123,4 @@ u2 =
         tmp = analyzehgsshtestresult(anares[0], anares[1], confdir)
         # print tmp
         if tmp != anares[2]:
-            fail("hg-ssh invocation broke..." + repr(anares))
+            fail("hg-ssh invocation broke... " + repr(anares) + " " + repr(tmp))
