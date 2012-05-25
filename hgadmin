@@ -92,6 +92,11 @@ def main():
         make_repo_managed(sane_path, save_hgrc = True)
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "updateauth":
+        xx = sorted(list_all_repos(list_unmanaged=True))
+        if len(xx) != 0:
+            print("Attention! Found unmanaged Repositories!")
+            for y in xx:
+                print(y)
         update_auth()
         exit(0)
     elif len(sys.argv) == 2 and sys.argv[1] == "verify":
