@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import ConfigParser, string, sys, os, re, subprocess, stat, shutil, base64, logging, logging.handlers
+import ConfigParser, string, sys, os, re, subprocess, stat, shutil, base64, logging, logging.handlers, traceback
 
 # directory where hgadmin searches for its configuration
 BASEDIR='~/hgadmin-config'
@@ -888,6 +888,6 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        debug("Exception: "+ repr(e))
-        raise e
+        debug("Exception: "+ repr(e) + " " + repr(traceback.format_exc(5)) )
+        raise
   
