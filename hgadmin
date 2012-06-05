@@ -230,7 +230,7 @@ def rename_repo_nocheck(sane_old, sane_new):
         os.rename(sane_old, sane_new)
     except OSError as e:
         fail("renaming failed: " + repr(e))
-    info("renaming successfull")
+    info("renaming successful")
 
     
 
@@ -779,7 +779,7 @@ def sanitize_path(unsanitized_path, create_needed):
     """This function will try sanitize unsanitized_path and return the sanitized version.
 
     Returns: (b, p) where b is True or False, indicating whether
-    sanitation was successfull and p is the sanitized path (or '').
+    sanitation was successful and p is the sanitized path (or '').
 
     If create_needed is True, this function will also fail if
     unsanitized_path already exists.  Otherwise, this function will
