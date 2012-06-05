@@ -92,7 +92,8 @@ def main():
         user = sys.argv[2]
         oldpath = sys.argv[3]
         newpath = sys.argv[4]
-        fail("not implemented yet")
+        rename_repo(user, oldpath, newpath)
+        exit(0)
     elif len(sys.argv) == 3 and sys.argv[1] == "make_repo_managed":
         path_ok, sane_path = sanitize_path(sys.argv[2], create_needed = False)
         if not path_ok:
