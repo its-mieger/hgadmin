@@ -244,8 +244,8 @@ def rename_repo(user, unsanitized_oldpath, unsanitized_newpath):
         fail("invalid path")
     if not user in config.userlist:
         fail("unknown user")
-    if not is_managed_repo(sane_old):
-        fail("this is no managed repo")
+    if not is_managed_repo(sane_old, isAbs = True):
+        fail("this is no managed repo: " + repr(sane_old))
     repopatlist_old = find_matching_repopatterns(sane_old)
     if not user in gen_accesssets(repopatlist_old)["create"]:
         fail("access denied")
