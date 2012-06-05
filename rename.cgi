@@ -163,6 +163,8 @@ An Error Occurred! <br />
     
 
 def userexists(user):
+    if user == None:
+        return False
     try:
         userlist = subprocess.check_output(["hgadmin", "listusers"])
         userlist = userlist.split()
