@@ -33,6 +33,9 @@ def usage(name):
   prints a list of all managed repositories
 {n} [-D] [--confdir DIR] make_repo_managed REPO
   converts repository REPO to a managed repository.
+{n} [-D] [--confdir DIR] maybe_rename_repo USER OLDPATH NEWPATH
+  moves repo from OLDPATH to NEWPATH, if USER is allowed to create repos
+  at both OLDPATH and NEWPATH
 The configuration directory defaults to "~/hgadmin-config", which can be overridden 
 by setting the environment variable "HGADMIN_CONFREPO" or using the "--confdir" option.
 The "-D" option enables the (rather verbose) debugging output.
@@ -85,6 +88,11 @@ def main():
             fail("invalid path: " + repr(sys.argv[2]) + " " + repr(sane_path))
         gen_repo_nocheck(sane_path)
         exit(0)
+    elif len(sys.argv) == 5 and sys.argv[1] == "maybe_rename_repo":
+        user = sys.argv[2]
+        oldpath = sys.argv[3]
+        newpath = sys.argv[4]
+        fail("not implemented yet")
     elif len(sys.argv) == 3 and sys.argv[1] == "make_repo_managed":
         path_ok, sane_path = sanitize_path(sys.argv[2], create_needed = False)
         if not path_ok:
@@ -212,6 +220,38 @@ def make_repo_managed(sane_path, save_hgrc = False):
     x = open(sane_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
     x.write("foo")
     closefd(x)
+
+
+def rename_repo_nocheck(sane_old, sane_new):
+    """renames managed repository, without any security checks"""
+    info("renaming repo from " + repr(sane_old) + " to " + repr(sane_new))
+    try:
+        os.rename(sane_old, sane_new)
+    except OSError as e:
+        fail("renaming failed: " + repr(e))
+    info("renaming successfull")
+
+    
+
+def rename_repo(user, unsanitized_oldpath, unsanitized_newpath):
+    """creates a repository, if user is allowed to do"""
+    info("maybe renaming repo from " + repr(unsanitized_oldpath) 
+             + " to " + repr(unsanitized_newpath) )
+    path_ok_old, sane_old = sanitize_path(unsanitized_oldpath, create_needed = False)
+    path_ok_new, sane_new = sanitize_path(unsanitized_newpath, create_needed = True)
+    if not path_ok_old or not path_ok_new:
+        fail("invalid path")
+    if not user in config.userlist:
+        fail("unknown user")
+    if not is_managed_repo(sane_old):
+        fail("this is no managed repo")
+    repopatlist_old = find_matching_repopatterns(sane_old)
+    if not user in gen_accesssets(repopatlist_old)["create"]:
+        fail("access denied")
+    repopatlist_new = find_matching_repopatterns(sane_new)
+    if not user in gen_accesssets(repopatlist_new)["create"]:
+        fail("access denied")
+    rename_repo_nocheck(sane_old, sane_new)
 
 def gen_repo_nocheck(sane_path):
     """creates a managed repository, without any security checks"""
