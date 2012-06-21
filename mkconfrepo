@@ -195,6 +195,7 @@ def createconfrepo(path):
     r = os.system("hg init " + path)
     if r!= 0:
        fail("unable to create config repository")
+    oldcwd = os.getcwd()
     try:
        os.chdir(path)
     except OSError as e:
@@ -213,6 +214,10 @@ def createconfrepo(path):
     r = os.system("hg commit -m 'automatically generated hgadmin configuration repository'")
     if r != 0:
        fail("unable to commit config repository")
+    try:
+       os.chdir(oldcwd)
+    except OSError as e:
+       fail("unable to get back to previous directory??")
 
 def checkforhooksection(path):
    x = re.compile(r"^\s*\[\s*hooks\s*\]", re.MULTILINE)
