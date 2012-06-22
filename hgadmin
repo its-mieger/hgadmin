@@ -197,9 +197,9 @@ def closefd(fd):
     fd.flush()
     # if hgadmin is too slow (on linux), go complain to theodore t'so 
     # and comment out this line.
-    os.fdatasync(fd.fileno())
+    os.fsync(fd.fileno())
     # if you use a _recent_ kernel, and ext3/4 with data=ordered or data=journal
-    # this fdatasync "should" be unnecessary anyway, because we do a rename on all
+    # this fsync "should" be unnecessary anyway, because we do a rename on all
     # files after having written them...
     fd.close()
 
