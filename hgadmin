@@ -217,6 +217,9 @@ def closefd(fd):
 
 def make_repo_managed(sane_path, save_hgrc = False):
     """converts a unmanaged repo to a managed repository"""
+    x = open(sane_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
+    x.write("foo")
+    closefd(x)
     if save_hgrc:
         try:
             os.rename(sane_path+'/.hg/hgrc', sane_path+'/.hg/hgrc_prefix')
@@ -230,9 +233,6 @@ def make_repo_managed(sane_path, save_hgrc = False):
         x.write("# Note that you must not include a [web] section in here!\n\n")
         x.close()
     gen_hgrc(sane_path)
-    x = open(sane_path+'/.hg/ADMINISTRATED_BY_HGADMIN', "w")
-    x.write("foo")
-    closefd(x)
 
 
 def rename_repo_nocheck(sane_old, sane_new):
