@@ -78,7 +78,7 @@ def main():
     debug("commandline: " + repr(sys.argv))
     configDir = os.path.abspath(os.path.expanduser(x))
     config = parse_config(configDir)
-    debug("config: "+ repr(config))
+    #debug("config: "+ repr(config))
     if len(sys.argv) == 4 and sys.argv[1] == "maybe_create_repo":
         gen_repo(sys.argv[2], sys.argv[3])
         exit(0)
@@ -175,22 +175,34 @@ def setuplogging(loglevel):
 
 def fail(msg):
     """helper function in case of catastrophic error"""
-    logging.error(msg)
+    try:
+        logging.error(msg)
+    except Exception:
+        pass
     sys.stderr.write("failure: " + msg + "\n")
     exit(1)
 
 
 def debug(msg):
     """helper function for debugging"""
-    logging.debug(msg)
+    try:
+        logging.debug(msg)
+    except Exception:
+        pass
 
 def warn(msg):
     """helper function for important warnings"""
-    logging.warning(msg)
+    try:
+        logging.warning(msg)
+    except Exception:
+        pass
 
 def info(msg):
     """helper function for somewhat important information"""
-    logging.info(msg)
+    try:
+        logging.info(msg)
+    except Exception:
+        pass
 
 def closefd(fd):
     """helper function to reliably close and flush a file"""
