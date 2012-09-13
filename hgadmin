@@ -631,7 +631,10 @@ def replacefile(targetpath, newsuffix):
         else:
             targetpresent = False
     try:
-        sys.stderr.write('.')
+        try:
+            sys.stderr.write('.')
+        except IOError as ee:
+            pass
         os.rename(n, targetpath)
     except Exception as e:
         os.remove(n)
