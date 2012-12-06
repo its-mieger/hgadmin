@@ -80,9 +80,9 @@ def parse_cmd(repodir):
     if len(repo) == 0:
         fail("invalid repository path")
     repo = repodir + '/' + repo
-    if  repo.find('"') != -1 or repo.find('/.') != -1:
-        fail("invalid repository path")
     repo = os.path.abspath(repo)
+    if repo.find('"') != -1 or repo.find('/.') != -1 or repo.find(repodir) != 0:
+        fail("invalid repository path")
     return (cmd, repo)
 
 def serve_impl(user, repo, repodir):
