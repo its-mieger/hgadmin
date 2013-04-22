@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import ConfigParser, string, sys, os, re, subprocess, stat, shutil, base64, logging, logging.handlers, traceback
+import ConfigParser, string, sys, os, re, subprocess, stat, shutil, base64, logging, logging.handlers, traceback, struct
 
 # directory where hgadmin searches for its configuration
 BASEDIR='~/hgadmin-config'
@@ -111,6 +111,8 @@ def main():
     elif len(sys.argv) == 2 and sys.argv[1] == "verify":
         if confError:
             exit(1)
+        gen_authkeys(simulate=True)
+        update_htpasswd(simulate=True)
         exit(0)
     elif len(sys.argv) == 5 and sys.argv[1] == "accesscheck":
         accesstype = sys.argv[2]
@@ -695,13 +697,20 @@ def valid_sshkey(x):
     """helper function to determine whether a string is a ssh key"""
     try:
         xs = x.split()
-        if len(xs) != 3:
+        if len(xs) < 2:
             return False
-        keytype, keystring, comment = xs
+        keytype = xs[0]
+        keystring = xs[1]
+        comment = xs[2:] # which will be ignored in the following... 
         keydata = base64.decodestring(keystring)
-        str_len = struct.unpack('>I', data[:4])[0]
+        str_len = struct.unpack('>I', keydata[:4])[0]
         return keydata[4:4+str_len] == keytype
+    except TypeError as e:
+        return False
+    except struct.error as e:
+        return False
     except Exception as e:
+        warn("valid_sshkey threw unexpected Exception " + repr(e))
         return False
 
 def fetchkey(keyfile):
@@ -715,23 +724,23 @@ def fetchkey(keyfile):
     except subprocess.CalledProcessError as e:
         pass
     keylist = None
+    debug("processing " + repr(keyfile))
     try:
         keylist =  [ x.strip() for x in open(keyfile).readlines() if x.strip() != "" ]
-        info("processing " + repr(keyfile))
-        for l in keylist:
-            info("key: " + repr(l))
-            if not valid_sshkey(l):
-                warn("keyfile " + repr(keyfile) \
-                            + " contains stuff that does not seem like a" \
-                            + " ssh key, ignoring this file")
-                return None
     except Exception as e:
         warn("processing keyfile " + repr(keyfile) \
                             + " caused an error: " + e)
         return []
+    for l in keylist:
+        if not valid_sshkey(l):
+            warn("keyfile " + repr(keyfile) \
+                     + " contains stuff that does not seem like a" \
+                     + " ssh key, ignoring this file\n" \
+                     + ">> \n>> " + repr(l) + "\n>> \n")
+            return []
     return keylist
 
-def gen_authkeys():
+def gen_authkeys(simulate = False):
     """creates authorized_keys file from authorized_keys_const and keys in configuration directory"""
     if not ('sshauthkeyspath' in config.paths and 'hg-ssh' in config.paths):
         info("required configuration settings for authkeyfile " \
@@ -744,7 +753,10 @@ def gen_authkeys():
     tmppath = authkeypath + tmpsuff
     predefpath = authkeypath +"_const"
     os.umask(077)
-    tmpfile = open(tmppath, "w")
+    if simulate:
+        tmpfile = open("/dev/null", "w")
+    else:
+        tmpfile = open(tmppath, "w")
     try: 
         predef = open(predefpath, "r")
         x = os.fstat(predef.fileno())
@@ -772,12 +784,17 @@ def gen_authkeys():
                 tmpfile.write('"' +config.paths['hg-ssh'] +' ' \
                                   + config.paths['repopath'] + ' '+ user + ' ' \
                                   + configDir + ' " ' + key + '\n')
-    closefd(tmpfile)
-    
-    replacefile(authkeypath, tmpsuff)
+    if simulate:
+        tmpfile.close()
+        tmpfile = None
+    else:
+        closefd(tmpfile)
+        replacefile(authkeypath, tmpsuff)
 
-def update_htpasswd():
+def update_htpasswd(simulate = False):
     """replaces system htpasswd file with htpasswd file from configuration directory"""
+    if simulate:
+        return
     if not 'htpasswdpath' in config.paths:
         info("config setting 'htpasswdpath' missing; skipping update of htpasswd file")
         return
