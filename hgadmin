@@ -698,7 +698,7 @@ def valid_sshkey(x):
         if len(xs) != 3:
             return False
         keytype, keystring, comment = xs
-        keydata = base64.decodestring(key_string)
+        keydata = base64.decodestring(keystring)
         str_len = struct.unpack('>I', data[:4])[0]
         return keydata[4:4+str_len] == keytype
     except Exception as e:
@@ -716,16 +716,19 @@ def fetchkey(keyfile):
         pass
     keylist = None
     try:
-        keylist =  [ x.strip() for x in open(keyfile).readlines() ]
+        keylist =  [ x.strip() for x in open(keyfile).readlines() if x.strip() != "" ]
+        info("processing " + repr(keyfile))
         for l in keylist:
+            info("key: " + repr(l))
             if not valid_sshkey(l):
-                warning("keyfile " + repr(keyfile) \
+                warn("keyfile " + repr(keyfile) \
                             + " contains stuff that does not seem like a" \
                             + " ssh key, ignoring this file")
                 return None
     except Exception as e:
-        # raise e
-        pass
+        warn("processing keyfile " + repr(keyfile) \
+                            + " caused an error: " + e)
+        return []
     return keylist
 
 def gen_authkeys():
