@@ -772,6 +772,7 @@ def gen_authkeys(simulate = False):
             l = os.listdir(keydir + '/' + user)
         except OSError as e:
             continue
+        l.sort()
         debug("gen_authkeys: for user " + user + " using keyfiles " + repr(l))
         for keyfile in l:
             p = keydir + '/' + user + '/' + keyfile

@@ -46,7 +46,12 @@ no-pty,no-port-forwarding,no-X11-forwarding,no-agent-forwarding,command="%(maste
     execCmd([testdict['hgadmin'], '-q', '--confdir', confdir, 'updateauth'])
     x = open(authkf).read()
     if not x == res1:
-        fail("authkeyfile creation failed")
+        print(">>>>>>>>>>>>>>>>>> found:")
+        print(x)
+        print(">>>>>>>>>>>>>>>>>> received:")
+        print(res1)
+        print(">>>>>>>>>>>>>>>>>>")
+        fail("authkeyfile creation failed:\n " + repr(authkf) + "\n" + repr(x))
     fd = open(authkf+'_const', "w")
     fd.write("prefix-key\nnochnprefixkey\n")
     fd.close()
