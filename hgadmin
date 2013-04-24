@@ -378,6 +378,63 @@ class confobj: # object to save configuration settings
             + "  'paths': "      + repr(self.paths) + " }" 
 
 
+def parseAccess(accessContent, userlist, groupdict):
+    """parses content of the access file, and creates the access dictionary"""
+    def initDfl(accessdict, path):
+        accessdict.setdefault(path, {})
+        for p in ['user', 'group']:
+            accessdict[path].setdefault(p, {})
+            for a in ["read", "write", "create", "deny"]:
+                accessdict[path][p].setdefault(a, [])        
+
+    def setAccessHelper(accessdict, path, prefix, ats, realname):
+        initDfl(accessdict, path)
+        if ats == 'r':
+            accessdict[path][prefix]["read"].append(realname)
+        elif ats == 'rw':
+            accessdict[path][prefix]["write"].append(realname)
+            accessdict[path][prefix]["read"].append(realname)
+        elif ats == 'rwC':
+            accessdict[path][prefix]["create"].append(realname)
+            accessdict[path][prefix]["write"].append(realname)
+            accessdict[path][prefix]["read"].append(realname)
+        elif ats == '' or ats == 'deny':
+            # side effect: user is mentioned in this pattern
+            accessdict[path][prefix]["deny"].append(realname)
+        else:
+            warn(("access file section [%s] at %s: invalid setting, " \
+                      + "defaulting to DENY") % (path, userorgroup))
+            accessdict[path][prefix]["deny"].append(realname)
+
+    accessdict = {}
+    for item in accessContent.sections():
+        if len(item) >= 1 and item[0] == '/':
+            path = item
+            for userorgroup, accesstype in accessContent.items(path):
+                if userorgroup[0] == '@':
+                    prefix = 'group'
+                    realname = userorgroup[1:]
+                else:
+                    prefix = 'user'
+                    realname = userorgroup
+                ats = accesstype.strip()
+                setAccessHelper(accessdict, path, prefix, ats, realname)
+        elif len(item) >= 1 and item in userlist:
+            prefix = "user"
+            realname = item
+            for path, accesstype in accessContent.items(path):
+                ats = accesstype.strip()
+                setAccessHelper(accessdict, path, prefix, ats, realname)
+        elif len(item) >= 1 and item[0] == '@' and item[1:] in groupdict:
+            prefix = "group"
+            realname = item[1:]
+            for path, accesstype in accessContent.items(path):
+                ats = accesstype.strip()
+                setAccessHelper(accessdict, path, prefix, ats, realname)
+        else:
+            warn("access file section [%s]: invalid name" % path)            
+    return accessdict
+
 def parse_config(confdir):
     """function to parse configuration and initialize configuration object"""
     global confError
@@ -510,37 +567,7 @@ def parse_config(confdir):
         except Exception as e:
             confError = True
             warn("could not read addtionalgroupsfile: " + repr(e))
-    accessdict = {}
-    for path in accessContent.sections():
-        accessdict.setdefault(path, {})
-        for prefix in ['user', 'group']:
-            accessdict[path].setdefault(prefix, {})
-            for accesstype in ["read", "write", "create", "deny"]:
-                accessdict[path][prefix].setdefault(accesstype, [])
-        for userorgroup, accesstype in accessContent.items(path):
-            if userorgroup[0] == '@':
-                prefix = 'group'
-                realname = userorgroup[1:]
-            else:
-                prefix = 'user'
-                realname = userorgroup
-            ats = accesstype.strip()
-            if ats == 'r':
-                accessdict[path][prefix]["read"].append(realname)
-            elif ats == 'rw':
-                accessdict[path][prefix]["write"].append(realname)
-                accessdict[path][prefix]["read"].append(realname)
-            elif ats == 'rwC':
-                accessdict[path][prefix]["create"].append(realname)
-                accessdict[path][prefix]["write"].append(realname)
-                accessdict[path][prefix]["read"].append(realname)
-            elif ats == '' or ats == 'deny':
-                # side effect: user is mentioned in this pattern
-                accessdict[path][prefix]["deny"].append(realname)
-            else:
-                warn(("access file section [%s] at %s: invalid setting, " \
-                          + "defaulting to DENY") % (path, userorgroup))              
-                accessdict[path][prefix]["deny"].append(realname)
+
 
     # now some sanity checks:
     for u in userlist:
@@ -562,6 +589,11 @@ def parse_config(confdir):
                 confError = True
                 groupdict[g].remove(u)
     todelete = []
+
+    # now, parse the access file
+    accessdict = parseAccess(accessContent, userlist, groupdict)
+
+    # now, sanity checks for access...
     for pattern in accessdict:
         if not _valid_repopattern(pattern):
             warn('repo pattern %s is invalid' % pattern)
