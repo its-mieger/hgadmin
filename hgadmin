@@ -388,6 +388,7 @@ def parseAccess(accessContent, userlist, groupdict):
                 accessdict[path][p].setdefault(a, [])        
 
     def setAccessHelper(accessdict, path, prefix, ats, realname):
+        # debug(">>> " + path+ " " + prefix + " " + realname + " -> " + ats)
         initDfl(accessdict, path)
         if ats == 'r':
             accessdict[path][prefix]["read"].append(realname)
@@ -408,9 +409,10 @@ def parseAccess(accessContent, userlist, groupdict):
 
     accessdict = {}
     for item in accessContent.sections():
+        # debug(">> section " + item)
         if len(item) >= 1 and item[0] == '/':
             path = item
-            for userorgroup, accesstype in accessContent.items(path):
+            for userorgroup, accesstype in accessContent.items(item):
                 if userorgroup[0] == '@':
                     prefix = 'group'
                     realname = userorgroup[1:]
@@ -422,17 +424,17 @@ def parseAccess(accessContent, userlist, groupdict):
         elif len(item) >= 1 and item in userlist:
             prefix = "user"
             realname = item
-            for path, accesstype in accessContent.items(path):
+            for path, accesstype in accessContent.items(item):
                 ats = accesstype.strip()
                 setAccessHelper(accessdict, path, prefix, ats, realname)
         elif len(item) >= 1 and item[0] == '@' and item[1:] in groupdict:
             prefix = "group"
             realname = item[1:]
-            for path, accesstype in accessContent.items(path):
+            for path, accesstype in accessContent.items(item):
                 ats = accesstype.strip()
                 setAccessHelper(accessdict, path, prefix, ats, realname)
         else:
-            warn("access file section [%s]: invalid name" % path)            
+            warn("access file section [%s]: invalid name" % item)
     return accessdict
 
 def parse_config(confdir):
