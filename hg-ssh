@@ -99,10 +99,10 @@ def serve_impl(user, repo, repodir):
     if not readaccess:
         fail("insufficient privilege")
     rqlist = ['-R', repo, 'serve', '--stdio']
-    if not writeaccess:
-        rqlist += ['--config', 'hooks.prechangegroup=false', \
-                       '--config', 'hooks.pretxnchangegroup=false',\
-                       '--config', 'hooks.prepushkey=false']
+    #if not writeaccess:
+    #    rqlist += ['--config', 'hooks.prechangegroup=false', \
+    #                   '--config', 'hooks.pretxnchangegroup=false',\
+    #                   '--config', 'hooks.prepushkey=false']
     debug("success: " + repr(rqlist))
     dispatch.dispatch(request(rqlist))
 
